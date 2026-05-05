@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.pandydoc.pdfmonitor</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>
+            INCOMING_DIR="$HOME/Library/Application Support/PandyDoc/Incoming"
+            while true; do
+                for file in "$INCOMING_DIR"/*.pdf; do
+                    if [ -f "$file" ]; then
+                        mv "$file" "$HOME/Library/Application Support/PandyDoc/Processed/"
+                        osascript -e 'tell application "PandyDoc" to activate' 2>/dev/null || true
+                    fi
+                done
+                sleep 2
+            done
+        </string>
+    </array>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>StandardOutPath</key>
+    <string>/tmp/pandydoc-monitor.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/tmp/pandydoc-monitor-error.log</string>
+</dict>
+</plist>

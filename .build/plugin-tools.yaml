@@ -1,0 +1,125 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "DocManager-arm64-apple-macosx-debug.module": ["<DocManager-arm64-apple-macosx-debug.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "PandyDoc-arm64-apple-macosx-debug.exe": ["<PandyDoc-arm64-apple-macosx-debug.exe>"]
+  "PrinterExtension-arm64-apple-macosx-debug.module": ["<PrinterExtension-arm64-apple-macosx-debug.module>"]
+  "Shared-arm64-apple-macosx-debug.module": ["<Shared-arm64-apple-macosx-debug.module>"]
+  "main": ["<DocManager-arm64-apple-macosx-debug.module>","<PandyDoc-arm64-apple-macosx-debug.exe>","<PrinterExtension-arm64-apple-macosx-debug.module>","<Shared-arm64-apple-macosx-debug.module>"]
+  "test": ["<DocManager-arm64-apple-macosx-debug.module>","<PandyDoc-arm64-apple-macosx-debug.exe>","<PrinterExtension-arm64-apple-macosx-debug.module>","<Shared-arm64-apple-macosx-debug.module>"]
+default: "main"
+nodes:
+  "/Users/andy/VSChrom/pandydoc/Sources/DocManager/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/andy/VSChrom/pandydoc/Sources/PrinterExtension/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/andy/VSChrom/pandydoc/Sources/Shared/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc":
+    is-mutated: true
+commands:
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/andy/VSChrom/pandydoc/Sources/DocManager/DocManagerApp.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Document.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/DocumentTypes.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentEditorService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentStorage.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentWatcherService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FileWatcher.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/PDFPrinterService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Utilities/AppDelegate.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/ViewModels/DocumentListViewModel.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/CheckInSheetView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/ContentView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentDetailView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentRowView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/PrinterSetupSheet.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/SettingsView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/VersionHistoryView.swift"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/sources"]
+    description: "Write auxiliary file /Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/sources"
+
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc-entitlement.plist"]
+    description: "Write auxiliary file /Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc-entitlement.plist"
+
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/AppDelegate.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInSheetView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/ContentView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocManagerApp.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Document.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentDetailView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentEditorService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentListViewModel.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentStorage.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentWatcherService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/SettingsView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/VersionHistoryView.swift.o"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc.product/Objects.LinkFileList"
+
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/andy/VSChrom/pandydoc/Sources/PrinterExtension/PrintExtension.swift"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/sources"]
+    description: "Write auxiliary file /Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/sources"
+
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/andy/VSChrom/pandydoc/Sources/Shared/PandyDocConstants.swift"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/sources"]
+    description: "Write auxiliary file /Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/sources"
+
+  "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+
+  "<DocManager-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocManagerApp.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Document.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentEditorService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentStorage.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentWatcherService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/AppDelegate.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentListViewModel.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInSheetView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/ContentView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentDetailView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/SettingsView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/VersionHistoryView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/DocManager.swiftmodule"]
+    outputs: ["<DocManager-arm64-apple-macosx-debug.module>"]
+
+  "<PandyDoc-arm64-apple-macosx-debug.exe>":
+    tool: phony
+    inputs: ["<PandyDoc-arm64-apple-macosx-debug.exe-CodeSigning>"]
+    outputs: ["<PandyDoc-arm64-apple-macosx-debug.exe>"]
+
+  "<PrinterExtension-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/PrinterExtension.swiftmodule"]
+    outputs: ["<PrinterExtension-arm64-apple-macosx-debug.module>"]
+
+  "<Shared-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/PandyDocConstants.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/Shared.swiftmodule"]
+    outputs: ["<Shared-arm64-apple-macosx-debug.module>"]
+
+  "C.DocManager-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/andy/VSChrom/pandydoc/Sources/DocManager/DocManagerApp.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Document.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/DocumentTypes.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentEditorService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentStorage.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentWatcherService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FileWatcher.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/PDFPrinterService.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Utilities/AppDelegate.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/ViewModels/DocumentListViewModel.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/CheckInSheetView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/ContentView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentDetailView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentRowView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/PrinterSetupSheet.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/SettingsView.swift","/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/VersionHistoryView.swift","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/sources"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocManagerApp.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Document.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentEditorService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentStorage.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentWatcherService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/AppDelegate.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentListViewModel.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInSheetView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/ContentView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentDetailView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/SettingsView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/VersionHistoryView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/DocManager.swiftmodule"]
+    description: "Compiling Swift Module 'DocManager' (18 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","DocManager","-emit-dependencies","-emit-module","-emit-module-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/DocManager.swiftmodule","-output-file-map","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/output-file-map.json","-incremental","-c","@/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/sources","-I","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","DocManager_main","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","pandydoc"]
+
+  "C.PandyDoc-arm64-apple-macosx-debug.exe":
+    tool: shell
+    inputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/AppDelegate.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInSheetView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/ContentView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocManagerApp.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Document.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentDetailView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentEditorService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentListViewModel.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentStorage.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentWatcherService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/SettingsView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/VersionHistoryView.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc.product/Objects.LinkFileList"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/PandyDoc"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug","-o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc","-module-name","PandyDoc","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_DocManager_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx14.0","-Xlinker","-add_ast_path","-Xlinker","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/DocManager.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.PandyDoc-arm64-apple-macosx-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc-entitlement.plist"]
+    outputs: ["<PandyDoc-arm64-apple-macosx-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/PandyDoc"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc-entitlement.plist","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc"]
+
+  "C.PrinterExtension-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/andy/VSChrom/pandydoc/Sources/PrinterExtension/PrintExtension.swift","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/sources"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/PrinterExtension.swiftmodule"]
+    description: "Compiling Swift Module 'PrinterExtension' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","PrinterExtension","-emit-dependencies","-emit-module","-emit-module-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/PrinterExtension.swiftmodule","-output-file-map","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/sources","-I","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/include/PrinterExtension-Swift.h","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","pandydoc"]
+
+  "C.Shared-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/andy/VSChrom/pandydoc/Sources/Shared/PandyDocConstants.swift","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/sources"]
+    outputs: ["/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/PandyDocConstants.swift.o","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/Shared.swiftmodule"]
+    description: "Compiling Swift Module 'Shared' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","Shared","-emit-dependencies","-emit-module","-emit-module-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/Shared.swiftmodule","-output-file-map","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/sources","-I","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/include/Shared-Swift.h","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","pandydoc"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/andy/VSChrom/pandydoc/Sources/DocManager/","/Users/andy/VSChrom/pandydoc/Sources/PrinterExtension/","/Users/andy/VSChrom/pandydoc/Sources/Shared/","/Users/andy/VSChrom/pandydoc/Package.swift","/Users/andy/VSChrom/pandydoc/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

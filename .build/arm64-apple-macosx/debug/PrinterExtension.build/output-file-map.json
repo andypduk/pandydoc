@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/primary.swiftdeps"
+  },
+  "/Users/andy/VSChrom/pandydoc/Sources/PrinterExtension/PrintExtension.swift": {
+    "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension.d",
+    "object": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension.swift.o",
+    "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension.swiftdeps",
+    "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/PrintExtension.dia"
+  }
+}

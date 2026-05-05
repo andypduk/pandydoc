@@ -1,0 +1,40 @@
+{
+  "pandydoc" = {
+    "name" = "pandydoc";
+    "targets" = [
+      {
+        "name" = "DocManager";
+        "type" = "application";
+        "platform" = "macOS";
+        "deploymentTarget" = "14.0";
+        "sources" = [
+          "DocManager/**/*.swift",
+          "DocManager/**/*.xib"
+        ];
+        "resources" = [
+          "DocManager/Resources/**/*"
+        ];
+        "settings" = {
+          "PRODUCT_BUNDLE_IDENTIFIER" = "com.pandydoc.DocManager";
+          "PRODUCT_NAME" = "PandyDoc";
+          "MACOSX_DEPLOYMENT_TARGET" = "14.0";
+          "SWIFT_VERSION" = "5.9";
+          "INFOPLIST_FILE" = "DocManager/Resources/Info.plist";
+        };
+        "dependencies" = [];
+        "frameworks" = [
+          "AppKit.framework",
+          "Foundation.framework",
+          "SwiftUI.framework",
+          "Quartz.framework",
+          "CommonCrypto.framework"
+        ];
+        "entitlements" = {
+          "com.apple.security.files.user-selected.read-write" = true;
+          "com.apple.security.files.downloads.read-write" = true;
+          "com.apple.security.files.documents.read-write" = true;
+        };
+      }
+    ];
+  };
+}
