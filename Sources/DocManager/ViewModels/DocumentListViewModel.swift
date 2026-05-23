@@ -348,6 +348,10 @@ final class DocumentListViewModel: ObservableObject {
         let actualParent = parentID ?? currentFolder?.id
         print("Creating folder: name=\(name), parentID=\(actualParent?.uuidString ?? "nil")")
         do {
+            if try storage.hasFolderWithName(name: name, parentID: actualParent, excluding: nil) {
+                errorMessage = "A folder named \"\(name)\" already exists at this location"
+                return
+            }
             let folder = try storage.createFolder(name: name, parentID: actualParent)
             print("Folder created: \(folder.id)")
             refreshDocuments()
@@ -365,13 +369,32 @@ final class DocumentListViewModel: ObservableObject {
     func confirmDeleteFolder() {
         guard let folder = folderToDelete else { return }
         do {
+            let folderId = folder.id
+            let descendants = collectDescendantIDs(of: folderId)
             try storage.deleteFolder(id: folder.id)
+
+            if currentFolder?.id == folderId || descendants.contains(where: { $0 == currentFolder?.id }) {
+                navigateToRoot()
+            } else if let idx = folderPath.firstIndex(where: { $0.id == folderId || descendants.contains($0.id) }) {
+                folderPath = Array(folderPath.prefix(upTo: idx))
+                currentFolder = folderPath.last
+            }
+
             refreshDocuments()
             folderToDelete = nil
             showDeleteFolderConfirmation = false
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func collectDescendantIDs(of folderID: UUID) -> Set<UUID> {
+        var ids = Set<UUID>()
+        for child in allFolders where child.parentID == folderID {
+            ids.insert(child.id)
+            ids.formUnion(collectDescendantIDs(of: child.id))
+        }
+        return ids
     }
 
     func startRenameFolder(_ folder: Folder) {
@@ -385,7 +408,24 @@ final class DocumentListViewModel: ObservableObject {
             showFolderRenameAlert = false
             return
         }
+        guard folderRenameText != folder.name else {
+            showFolderRenameAlert = false
+            folderToRename = nil
+            return
+        }
         do {
+            if try storage.isFolderProtected(id: folder.id) {
+                errorMessage = "Cannot rename a protected folder. Unprotect it first."
+                showFolderRenameAlert = false
+                folderToRename = nil
+                return
+            }
+            if try storage.hasFolderWithName(name: folderRenameText, parentID: folder.parentID, excluding: folder.id) {
+                errorMessage = "A folder named \"\(folderRenameText)\" already exists at this location"
+                showFolderRenameAlert = false
+                folderToRename = nil
+                return
+            }
             var updated = folder
             updated.name = folderRenameText
             try storage.updateFolder(updated)
@@ -625,6 +665,17 @@ final class DocumentListViewModel: ObservableObject {
         guard let folder = folderToMove else { return }
         guard folder.id != targetParentID else {
             showFolderMoveSheet = false
+            return
+        }
+        do {
+            if try storage.isFolderProtected(id: folder.id) {
+                errorMessage = "Cannot move a protected folder. Unprotect it first."
+                showFolderMoveSheet = false
+                folderToMove = nil
+                return
+            }
+        } catch {
+            errorMessage = "Failed to move folder: \(error.localizedDescription)"
             return
         }
         func isDescendant(of parentID: UUID?, target: UUID) -> Bool {

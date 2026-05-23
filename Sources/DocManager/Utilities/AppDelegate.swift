@@ -153,6 +153,11 @@ extension DocumentStorage {
 
     func importFolderIfNotExists(url: URL) throws {
         let fileManager = FileManager.default
+        let rootName = url.lastPathComponent
+        var folderMap: [String: UUID] = [:]
+
+        let rootFolder = try createFolder(name: rootName, parentID: nil)
+        folderMap[""] = rootFolder.id
 
         guard let enumerator = fileManager.enumerator(
             at: url,
@@ -164,10 +169,56 @@ extension DocumentStorage {
 
         let items = enumerator.allObjects.compactMap { $0 as? URL }
         for fileURL in items {
+            let relativePath = String(fileURL.path.dropFirst(url.path.count + 1))
+            let relativeDir = (relativePath as NSString).deletingLastPathComponent
+
             let attributes = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
-            if attributes.isDirectory != true {
-                try importDocumentIfNotExists(url: fileURL)
+            if attributes.isDirectory == true {
+                let folderName = fileURL.lastPathComponent
+                let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
+                if try !hasFolderWithName(name: folderName, parentID: parentID, excluding: nil) {
+                    if let newFolder = try? createFolder(name: folderName, parentID: parentID) {
+                        folderMap[relativePath] = newFolder.id
+                    }
+                }
+            } else {
+                let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
+                try? importDocumentIntoFolder(url: fileURL, folderID: parentID)
             }
         }
+
+        NotificationCenter.default.post(name: .documentReceived, object: nil)
+    }
+
+    private func importDocumentIntoFolder(url: URL, folderID: UUID) throws {
+        let fileName = url.lastPathComponent
+        let docName = (fileName as NSString).deletingPathExtension
+
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("PandyDoc/Import", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        let destURL = tempDir.appendingPathComponent(fileName)
+        if FileManager.default.fileExists(atPath: destURL.path) {
+            try FileManager.default.removeItem(at: destURL)
+        }
+        try FileManager.default.copyItem(at: url, to: destURL)
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: destURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+
+        let document = Document.createNew(
+            name: docName,
+            fileName: fileName,
+            filePath: destURL.path,
+            fileSize: fileSize,
+            parentID: folderID
+        )
+
+        try saveDocument(document)
+        _ = try createVersion(
+            documentId: document.id,
+            sourcePath: destURL.path,
+            changeNotes: "Initial import"
+        )
     }
 }

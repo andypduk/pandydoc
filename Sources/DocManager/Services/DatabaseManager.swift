@@ -511,8 +511,36 @@ final class DatabaseManager {
         if existing[folderProtected] {
             throw DocumentError.protectedItem
         }
+
+        let childFolders = try db.prepare(folders.filter(folderParentId == id.uuidString))
+        for childRow in childFolders {
+            let childId = UUID(uuidString: childRow[folderId]) ?? UUID()
+            try deleteFolder(db: db, id: childId)
+        }
+
         try db.run(folderFilter.delete())
         try db.run(documents.filter(parentIDCol == id.uuidString).update(parentIDCol <- nil))
+    }
+
+    func hasFolderWithName(db: Connection, name: String, parentID: UUID?, excluding excludeID: UUID?) throws -> Bool {
+        var query = folders.filter(folderName == name)
+        if let pid = parentID {
+            query = query.filter(folderParentId == pid.uuidString)
+        } else {
+            query = query.filter(folderParentId == nil)
+        }
+        if let excludeID {
+            query = query.filter(folderId != excludeID.uuidString)
+        }
+        return try db.scalar(query.count) > 0
+    }
+
+    func isFolderProtected(db: Connection, id: UUID) throws -> Bool {
+        let query = folders.filter(folderId == id.uuidString)
+        guard let row = try db.pluck(query) else {
+            throw DocumentError.documentNotFound
+        }
+        return row[folderProtected]
     }
 
     func toggleFolderProtection(db: Connection, id: UUID) throws {

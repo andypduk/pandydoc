@@ -25,6 +25,8 @@ protocol DocumentStorageProtocol {
     func updateFolder(_ folder: Folder) throws
     func toggleFolderProtection(id: UUID) throws
     func moveFolder(id: UUID, to parentID: UUID?) throws
+    func hasFolderWithName(name: String, parentID: UUID?, excluding: UUID?) throws -> Bool
+    func isFolderProtected(id: UUID) throws -> Bool
     func toggleDocumentProtection(id: UUID) throws
     func getAllDocumentsRecursive() -> [Document]
     func getCheckedOutByUser(username: String) -> [Document]
@@ -287,6 +289,16 @@ final class DocumentStorage: DocumentStorageProtocol {
         folder.updatedAt = Date()
         let conn = try db.getConnection()
         try db.updateFolder(db: conn, folder: folder)
+    }
+
+    func hasFolderWithName(name: String, parentID: UUID?, excluding excludeID: UUID?) throws -> Bool {
+        let conn = try db.getConnection()
+        return try db.hasFolderWithName(db: conn, name: name, parentID: parentID, excluding: excludeID)
+    }
+
+    func isFolderProtected(id: UUID) throws -> Bool {
+        let conn = try db.getConnection()
+        return try db.isFolderProtected(db: conn, id: id)
     }
 
     private func getFolder(id: UUID) throws -> Folder? {

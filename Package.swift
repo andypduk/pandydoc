@@ -10,6 +10,10 @@ let package = Package(
         .executable(
             name: "PandyDoc",
             targets: ["DocManager"]
+        ),
+        .executable(
+            name: "SaveToPandyDoc",
+            targets: ["SaveToPandyDoc"]
         )
     ],
     dependencies: [
@@ -38,6 +42,14 @@ let package = Package(
             name: "Shared",
             dependencies: [],
             path: "Sources/Shared"
+        ),
+        .executableTarget(
+            name: "SaveToPandyDoc",
+            dependencies: [],
+            path: "Sources/SaveToPandyDoc",
+            linkerSettings: [
+                .linkedFramework("AppKit")
+            ]
         )
     ]
 )

@@ -7,6 +7,8 @@ APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
 echo "Building $APP_NAME..."
 swift build --product "$APP_NAME"
+echo "Building SaveToPandyDoc..."
+swift build --product SaveToPandyDoc
 
 echo "Creating app bundle..."
 rm -rf "$APP_BUNDLE"
@@ -14,6 +16,7 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS"
 mkdir -p "$APP_BUNDLE/Contents/Resources"
 
 cp "$BUILD_DIR/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/"
+cp "$BUILD_DIR/SaveToPandyDoc" "$APP_BUNDLE/Contents/MacOS/"
 
 cat > "$APP_BUNDLE/Contents/Info.plist" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
