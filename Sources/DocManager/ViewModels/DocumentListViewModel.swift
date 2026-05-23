@@ -1,11 +1,13 @@
 import Foundation
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 final class DocumentListViewModel: ObservableObject {
     @Published var documents: [Document] = []
     @Published var selectedDocument: Document?
+    @Published var documentRefreshToken: Int = 0
     @Published var searchQuery = ""
     @Published var selectedTags: [String] = []
     @Published var filterStatus: DocumentStatus?
@@ -43,6 +45,9 @@ final class DocumentListViewModel: ObservableObject {
     @Published var newFolderParentID: UUID?
     @Published var pendingImportURL: URL?
     @Published var pendingImportIsFolder = false
+    @Published var showFolderMoveSheet = false
+    @Published var folderToMove: Folder?
+    @Published var folderMoveTargetParentID: UUID?
 
     private var templatesFolderID: UUID?
     private let templatesFolderName = "Templates"
@@ -128,6 +133,10 @@ final class DocumentListViewModel: ObservableObject {
         }
         isLoading = false
     }
+
+    func freshDocument(for id: UUID) -> Document? {
+        storage.getDocument(id: id)
+    }
     
     func refreshDocuments() {
         ensureTemplatesFolderExists()
@@ -153,6 +162,9 @@ final class DocumentListViewModel: ObservableObject {
         applyFilters()
         if let sel = selectedDocument, let updated = documents.first(where: { $0.id == sel.id }) {
             selectedDocument = updated
+        } else if let sel = selectedDocument, let fresh = storage.getDocument(id: sel.id) {
+            selectedDocument = fresh
+            documentRefreshToken += 1
         }
     }
     
@@ -255,8 +267,9 @@ final class DocumentListViewModel: ObservableObject {
         do {
             try storage.moveDocument(documentID: document.id, to: templatesID)
             refreshDocuments()
-            if selectedDocument?.id == document.id {
-                selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
             }
         } catch {
             errorMessage = "Failed to add to templates: \(error.localizedDescription)"
@@ -267,8 +280,9 @@ final class DocumentListViewModel: ObservableObject {
         do {
             try storage.moveDocument(documentID: document.id, to: nil)
             refreshDocuments()
-            if selectedDocument?.id == document.id {
-                selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
             }
         } catch {
             errorMessage = "Failed to remove from templates: \(error.localizedDescription)"
@@ -385,13 +399,13 @@ final class DocumentListViewModel: ObservableObject {
 
     func checkOut(document: Document) {
         do {
-            let response = try checkInOut.checkOut(documentId: document.id)
-            if response.success {
-                refreshDocuments()
-                selectedDocument = documents.first { $0.id == document.id }
-            } else {
-                errorMessage = response.error ?? "Check out failed"
+            let result = try editor.openDocument(documentId: document.id)
+            refreshDocuments()
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
             }
+            NSWorkspace.shared.open(result.fileURL)
         } catch {
             errorMessage = "Check out failed: \(error.localizedDescription)"
         }
@@ -401,7 +415,10 @@ final class DocumentListViewModel: ObservableObject {
         do {
             _ = try checkInOut.checkIn(documentId: document.id, changeNotes: nil)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
         } catch {
             errorMessage = "Check in failed: \(error.localizedDescription)"
         }
@@ -418,7 +435,10 @@ final class DocumentListViewModel: ObservableObject {
         do {
             _ = try checkInOut.checkIn(documentId: document.id, changeNotes: checkInNotes.isEmpty ? nil : checkInNotes)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
             showCheckInSheet = false
             checkInNotes = ""
         } catch {
@@ -430,7 +450,10 @@ final class DocumentListViewModel: ObservableObject {
         do {
             _ = try checkInOut.saveWorkingCopy(documentId: document.id)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
         } catch {
             errorMessage = "Save working copy failed: \(error.localizedDescription)"
         }
@@ -452,7 +475,10 @@ final class DocumentListViewModel: ObservableObject {
         do {
             try checkInOut.lock(documentId: document.id)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
         } catch {
             errorMessage = "Lock failed: \(error.localizedDescription)"
         }
@@ -462,7 +488,10 @@ final class DocumentListViewModel: ObservableObject {
         do {
             try checkInOut.unlock(documentId: document.id)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
         } catch {
             errorMessage = "Unlock failed: \(error.localizedDescription)"
         }
@@ -485,7 +514,10 @@ final class DocumentListViewModel: ObservableObject {
             updated.fileName = renameText + "." + document.fileExtension
             try storage.updateDocument(updated)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == document.id }
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
         } catch {
             errorMessage = "Rename failed: \(error.localizedDescription)"
         }
@@ -495,7 +527,35 @@ final class DocumentListViewModel: ObservableObject {
 
     func openDocument(document: Document) {
         let url = URL(fileURLWithPath: document.filePath)
-        NSWorkspace.shared.open(url)
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.open(url, configuration: config)
+    }
+
+    func exportDocument(_ document: Document) {
+        let savePanel = NSSavePanel()
+        savePanel.title = "Export Document"
+        savePanel.nameFieldStringValue = document.fileName
+        savePanel.canCreateDirectories = true
+
+        let fileURL = URL(fileURLWithPath: document.filePath)
+        if let utType = UTType(filenameExtension: fileURL.pathExtension) {
+            savePanel.allowedContentTypes = [utType]
+        }
+
+        savePanel.begin { response in
+            guard response == .OK, let destURL = savePanel.url else { return }
+            do {
+                if FileManager.default.fileExists(atPath: destURL.path) {
+                    try FileManager.default.removeItem(at: destURL)
+                }
+                try FileManager.default.copyItem(atPath: document.filePath, toPath: destURL.path)
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "Failed to export document: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 
     func deleteDocument(document: Document) {
@@ -532,7 +592,10 @@ final class DocumentListViewModel: ObservableObject {
         do {
             _ = try storage.restoreVersion(documentId: documentId, versionNumber: versionNumber)
             refreshDocuments()
-            selectedDocument = documents.first { $0.id == documentId }
+            if let fresh = storage.getDocument(id: documentId) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
         } catch {
             errorMessage = "Restore failed: \(error.localizedDescription)"
         }
@@ -550,6 +613,38 @@ final class DocumentListViewModel: ObservableObject {
     func archiveFolder(_ folder: Folder) {
         archiveFolder = folder
         showArchiveSheet = true
+    }
+
+    func moveFolder(_ folder: Folder) {
+        folderToMove = folder
+        folderMoveTargetParentID = nil
+        showFolderMoveSheet = true
+    }
+
+    func performFolderMove(to targetParentID: UUID?) {
+        guard let folder = folderToMove else { return }
+        guard folder.id != targetParentID else {
+            showFolderMoveSheet = false
+            return
+        }
+        func isDescendant(of parentID: UUID?, target: UUID) -> Bool {
+            guard let parentID = parentID else { return false }
+            if parentID == target { return true }
+            let parentFolder = allFolders.first(where: { $0.id == parentID })
+            return isDescendant(of: parentFolder?.parentID, target: target)
+        }
+        if isDescendant(of: targetParentID, target: folder.id) {
+            errorMessage = "Cannot move a folder into itself or its subfolders"
+            return
+        }
+        do {
+            try storage.moveFolder(id: folder.id, to: targetParentID)
+            refreshDocuments()
+            showFolderMoveSheet = false
+            folderToMove = nil
+        } catch {
+            errorMessage = "Failed to move folder: \(error.localizedDescription)"
+        }
     }
 
     func performArchive(to destinationURL: URL) {
@@ -864,9 +959,31 @@ final class DocumentListViewModel: ObservableObject {
             forName: .documentExternallyModified,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] notification in
             Task { @MainActor [weak self] in
-                self?.refreshDocuments()
+                guard let self = self else { return }
+                self.refreshDocuments()
+                if let docID = notification.userInfo?["documentId"] as? UUID,
+                   let fresh = self.storage.getDocument(id: docID) {
+                    self.selectedDocument = fresh
+                    self.documentRefreshToken += 1
+                }
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .documentVersionCreated,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                if let docID = notification.userInfo?["documentId"] as? UUID,
+                   let fresh = self.storage.getDocument(id: docID) {
+                    self.selectedDocument = fresh
+                    self.documentRefreshToken += 1
+                }
+                self.refreshDocuments()
             }
         }
     }

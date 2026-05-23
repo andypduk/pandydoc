@@ -17,7 +17,20 @@ struct SettingsView: View {
     private let fileManager = FileManager.default
 
     var body: some View {
-        TabView {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "pawprint.fill")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+                Text("PandyDoc Settings")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.windowBackgroundColor))
+            Divider()
+            TabView {
             generalSettings
                 .tabItem {
                     Label("General", systemImage: "gear")
@@ -39,6 +52,7 @@ struct SettingsView: View {
                 }
         }
         .frame(width: 480, height: 340)
+        }
         .alert("Erase All Data", isPresented: $showEraseConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Erase", role: .destructive) { eraseAllData() }

@@ -10,6 +10,7 @@ enum DocumentType: String, Codable {
     case pdf
     case docx
     case xlsx
+    case pptx
     case txt
     case rtf
     case pages
@@ -22,6 +23,7 @@ enum DocumentType: String, Codable {
         case "pdf": return .pdf
         case "docx", "doc": return .docx
         case "xlsx", "xls": return .xlsx
+        case "pptx", "ppt": return .pptx
         case "txt": return .txt
         case "rtf": return .rtf
         case "pages": return .pages
@@ -36,6 +38,7 @@ enum DocumentType: String, Codable {
         case .pdf: return "application/pdf"
         case .docx: return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         case .xlsx: return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        case .pptx: return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
         case .txt: return "text/plain"
         case .rtf: return "application/rtf"
         case .pages: return "application/vnd.apple.pages"
@@ -50,6 +53,7 @@ enum DocumentType: String, Codable {
         case .pdf: return nil
         case .docx: return "Microsoft Word"
         case .xlsx: return "Microsoft Excel"
+        case .pptx: return "Microsoft PowerPoint"
         case .txt, .rtf: return "TextEdit"
         case .pages: return "Pages"
         case .numbers: return "Numbers"

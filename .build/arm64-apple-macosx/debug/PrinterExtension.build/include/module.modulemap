@@ -1,3 +1,0 @@
-module PrinterExtension {
-    header "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/include/PrinterExtension-Swift.h"
-}

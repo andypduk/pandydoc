@@ -130,14 +130,15 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
         
         do {
             _ = try checkInOut.saveWorkingCopy(documentId: documentId)
-            notificationCenter.post(
-                name: .documentExternallyModified,
-                object: nil,
-                userInfo: ["documentId": documentId, "filePath": path]
-            )
         } catch {
             print("Failed to save working copy: \(error)")
         }
+        
+        notificationCenter.post(
+            name: .documentExternallyModified,
+            object: nil,
+            userInfo: ["documentId": documentId, "filePath": path]
+        )
     }
     
     func fileWasDeleted(at path: String) {
@@ -210,4 +211,5 @@ extension Notification.Name {
     static let documentExternallyDeleted = Notification.Name("documentExternallyDeleted")
     static let documentCheckedIn = Notification.Name("documentCheckedIn")
     static let documentReceived = Notification.Name("documentReceived")
+    static let documentVersionCreated = Notification.Name("documentVersionCreated")
 }

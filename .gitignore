@@ -1,0 +1,13 @@
+# Swift/Xcode build artifacts
+.build/
+.swiftpm/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

@@ -207,4 +207,78 @@ final class PDFPrinterService {
         }
         return sanitized
     }
+
+    func installPDFService() -> Bool {
+        let pdfServicesDir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/PDF Services", isDirectory: true)
+
+        do {
+            try FileManager.default.createDirectory(at: pdfServicesDir, withIntermediateDirectories: true)
+
+            let appBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
+
+            if FileManager.default.fileExists(atPath: appBundleURL.path) {
+                try FileManager.default.removeItem(at: appBundleURL)
+            }
+
+            let appleScript = """
+            on open these_items
+                set incoming_dir to (POSIX path of (path to home folder)) & "Library/Application Support/PandyDoc/Incoming"
+                do shell script "mkdir -p " & quoted form of incoming_dir
+
+                repeat with this_item in these_items
+                    set item_path to POSIX path of this_item
+                    set item_name to do shell script "basename " & quoted form of item_path
+                    set uuid to do shell script "uuidgen"
+                    set dest_path to incoming_dir & "/" & uuid & "-" & item_name
+                    do shell script "cp " & quoted form of item_path & " " & quoted form of dest_path
+                end repeat
+
+                do shell script "osascript -e 'display notification \"Document saved to PandyDoc\" with title \"Save to PandyDoc\" sound name \"Glass\"'"
+            end open
+
+            on run
+                display notification "Drag a PDF onto this app to save it to PandyDoc" with title "Save to PandyDoc"
+            end run
+            """
+
+            let scriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("SaveToPandyDoc.scpt")
+            try appleScript.write(to: scriptURL, atomically: true, encoding: .utf8)
+
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/osacompile")
+            process.arguments = ["-o", appBundleURL.path, scriptURL.path]
+
+            try process.run()
+            process.waitUntilExit()
+
+            try? FileManager.default.removeItem(at: scriptURL)
+
+            guard process.terminationStatus == 0, FileManager.default.fileExists(atPath: appBundleURL.path) else {
+                print("PDFPrinterService: osacompile failed with exit code \(process.terminationStatus)")
+                return false
+            }
+
+            let plistURL = appBundleURL.appendingPathComponent("Contents/Info.plist")
+            if let plistData = try? Data(contentsOf: plistURL),
+               var plistDict = try? PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) as? [String: Any] {
+                plistDict["LSUIElement"] = true
+                plistDict["LSBackgroundOnly"] = true
+                let newData = try PropertyListSerialization.data(fromPropertyList: plistDict, format: .xml, options: 0)
+                try newData.write(to: plistURL)
+            }
+
+            return true
+        } catch {
+            print("PDFPrinterService: Failed to install PDF Service: \(error)")
+            return false
+        }
+    }
+
+    func isPDFServiceInstalled() -> Bool {
+        let pdfServicesDir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/PDF Services", isDirectory: true)
+        let appBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
+        return FileManager.default.fileExists(atPath: appBundleURL.path)
+    }
 }

@@ -12,6 +12,9 @@ struct ContentView: View {
     @State private var showPrinterSetup = false
     @State private var isCreatingFolder = false
     @State private var sidebarSelection: SidebarItem? = .allDocuments
+    @State private var showHelpSheet = false
+    @State private var showGettingStartedSheet = false
+    @State private var showShortcutsSheet = false
 
     var body: some View {
         NavigationSplitView {
@@ -26,6 +29,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 900, minHeight: 600)
         .toolbar { toolbarContent }
+        .navigationTitle("PandyDoc")
         .fileImporter(
             isPresented: $showImportSheet,
             allowedContentTypes: [.pdf, .data, .folder],
@@ -99,11 +103,38 @@ struct ContentView: View {
         .sheet(isPresented: $viewModel.showArchiveSheet) {
             ArchiveSheetView(viewModel: viewModel)
         }
+        .sheet(isPresented: $viewModel.showFolderMoveSheet) {
+            FolderMoveSheetView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showHelpSheet) {
+            HelpSheetView()
+        }
+        .sheet(isPresented: $showGettingStartedSheet) {
+            GettingStartedSheetView()
+        }
+        .sheet(isPresented: $showShortcutsSheet) {
+            KeyboardShortcutsSheetView()
+        }
         .onAppear {
             viewModel.loadInitialData()
             NotificationCenter.default.addObserver(
                 forName: .showPrinterSetup, object: nil, queue: .main
             ) { _ in showPrinterSetup = true }
+            NotificationCenter.default.addObserver(
+                forName: .showHelp, object: nil, queue: .main
+            ) { _ in showHelpSheet = true }
+            NotificationCenter.default.addObserver(
+                forName: .showGettingStarted, object: nil, queue: .main
+            ) { _ in showGettingStartedSheet = true }
+            NotificationCenter.default.addObserver(
+                forName: .showShortcuts, object: nil, queue: .main
+            ) { _ in showShortcutsSheet = true }
+            NotificationCenter.default.addObserver(
+                forName: .navigateToAllDocuments, object: nil, queue: .main
+            ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToRoot() } }
+            NotificationCenter.default.addObserver(
+                forName: .navigateToTemplates, object: nil, queue: .main
+            ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToTemplates() } }
         }
         .onChange(of: sidebarSelection) { _, newSelection in
             switch newSelection {
@@ -164,7 +195,10 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $sidebarSelection) {
+        VStack(spacing: 0) {
+            appBranding
+            Divider()
+            List(selection: $sidebarSelection) {
             Section {
                 HStack(spacing: 8) {
                     Image(systemName: viewModel.isShowingAllDocuments ? "house.fill" : "house")
@@ -190,8 +224,15 @@ struct ContentView: View {
                     return true
                 }
                 .contextMenu {
+                    Button(action: { showImportSheet = true }) {
+                        Label("Import Document...", systemImage: "square.and.arrow.down")
+                    }
+                    Divider()
                     Button(action: { startCreateFolder(parentID: nil) }) {
                         Label("New Folder", systemImage: "folder.badge.plus")
+                    }
+                    Button(action: { viewModel.refreshDocuments() }) {
+                        Label("Refresh", systemImage: "arrow.clockwise")
                     }
                 }
 
@@ -209,6 +250,14 @@ struct ContentView: View {
                     .onDrop(of: [.fileURL], isTargeted: nil) { providers in
                         handleFileDrop(providers: providers, targetFolderID: viewModel.getTemplatesFolderID())
                         return true
+                    }
+                    .contextMenu {
+                        Button(action: { viewModel.navigateToTemplates() }) {
+                            Label("Show Templates", systemImage: "doc.on.doc")
+                        }
+                        Button(action: { startCreateFolder(parentID: viewModel.getTemplatesFolderID()) }) {
+                            Label("New Template Folder", systemImage: "folder.badge.plus")
+                        }
                     }
                 }
             }
@@ -232,6 +281,9 @@ struct ContentView: View {
                     },
                     onToggleProtection: { folder in
                         viewModel.toggleFolderProtection(folder)
+                    },
+                    onMoveFolder: { folder in
+                        viewModel.moveFolder(folder)
                     },
                     isCreatingFolder: $isCreatingFolder,
                     newFolderName: $viewModel.newFolderName,
@@ -263,6 +315,22 @@ struct ContentView: View {
             }
         }
         .listStyle(SidebarListStyle())
+        }
+    }
+
+    private var appBranding: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "pawprint.fill")
+                .font(.title2)
+                .foregroundColor(.accentColor)
+            Text("PandyDoc")
+                .font(.headline)
+                .fontWeight(.semibold)
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 
     @FocusState private var folderFieldFocused: Bool
@@ -305,13 +373,21 @@ struct ContentView: View {
             if viewModel.documents.isEmpty && !viewModel.isLoading {
                 ContentUnavailableView(
                     viewModel.searchQuery.isEmpty ? emptyTitle : "No Results",
-                    systemImage: viewModel.isShowingTemplates ? "doc.on.doc" : "doc",
+                    systemImage: emptyIcon,
                     description: Text(viewModel.searchQuery.isEmpty
                         ? emptyDescription
                         : "No documents match \"\(viewModel.searchQuery)\"")
                 )
             }
         }
+    }
+
+    private var emptyIcon: String {
+        if viewModel.searchQuery.isEmpty && viewModel.isShowingAllDocuments {
+            return "pawprint.fill"
+        }
+        if viewModel.isShowingTemplates { return "doc.on.doc" }
+        return "doc"
     }
 
     private var emptyTitle: String {
@@ -328,26 +404,35 @@ struct ContentView: View {
 
     private var detailView: some View {
         Group {
-            if let document = viewModel.selectedDocument {
-                DocumentDetailView(document: document, viewModel: viewModel)
+            if viewModel.selectedDocument != nil {
+                DocumentQuickView(viewModel: viewModel)
+                    .id("\(viewModel.selectedDocument!.id.uuidString)-\(viewModel.documentRefreshToken)")
             } else {
-                ContentUnavailableView(
-                    "No Document Selected",
-                    systemImage: "doc",
-                    description: Text("Select a document from the list to view details")
-                )
+                VStack(spacing: 16) {
+                    Image(systemName: "pawprint.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.accentColor.opacity(0.6))
+                    Text("PandyDoc")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                    Text("Select a document to preview")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
             }
         }
     }
 
     private func handleFileDrop(providers: [NSItemProvider], targetFolderID: UUID?) {
         for provider in providers {
-            _ = provider.loadDataRepresentation(for: .fileURL) { data, error in
-                guard let data = data,
-                      let path = String(data: data, encoding: .utf8),
-                      let url = URL(string: path) else { return }
+            _ = provider.loadFileRepresentation(forTypeIdentifier: "public.data") { url, error in
+                guard let url = url else { return }
+                let started = url.startAccessingSecurityScopedResource()
                 DispatchQueue.main.async {
                     viewModel.importDocument(fileURL: url, to: targetFolderID)
+                    if started {
+                        url.stopAccessingSecurityScopedResource()
+                    }
                 }
             }
         }
@@ -356,12 +441,14 @@ struct ContentView: View {
     private func handleMixedDrop(providers: [NSItemProvider], folder: Folder) {
         for provider in providers {
             if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-                _ = provider.loadDataRepresentation(for: .fileURL) { data, error in
-                    guard let data = data,
-                          let path = String(data: data, encoding: .utf8),
-                          let url = URL(string: path) else { return }
+                _ = provider.loadFileRepresentation(forTypeIdentifier: "public.data") { url, error in
+                    guard let url = url else { return }
+                    let started = url.startAccessingSecurityScopedResource()
                     DispatchQueue.main.async {
                         viewModel.importDocument(fileURL: url, to: folder.id)
+                        if started {
+                            url.stopAccessingSecurityScopedResource()
+                        }
                     }
                 }
             } else {
@@ -430,6 +517,10 @@ struct ContentView: View {
 
         Divider()
 
+        Button(action: { viewModel.exportDocument(document) }) {
+            Label("Export...", systemImage: "square.and.arrow.up")
+        }
+
         Button(action: { viewModel.createFromTemplate(document) }) {
             Label("New from Template", systemImage: "doc.badge.plus")
         }
@@ -442,6 +533,10 @@ struct ContentView: View {
             Button(action: { viewModel.addToTemplates(document) }) {
                 Label("Add to Templates", systemImage: "doc.on.doc")
             }
+        }
+
+        Button(action: { viewModel.openDocument(document: document) }) {
+            Label("Open", systemImage: "arrow.up.right.square")
         }
 
         Divider()
@@ -480,6 +575,7 @@ struct FolderTreeView: View {
     let onArchiveFolder: (Folder) -> Void
     let onNewSubfolder: (Folder) -> Void
     let onToggleProtection: (Folder) -> Void
+    let onMoveFolder: (Folder) -> Void
 
     @Binding var isCreatingFolder: Bool
     @Binding var newFolderName: String
@@ -516,7 +612,8 @@ struct FolderTreeView: View {
                     onRenameFolder: onRenameFolder,
                     onArchiveFolder: onArchiveFolder,
                     onNewSubfolder: onNewSubfolder,
-                    onToggleProtection: onToggleProtection
+                    onToggleProtection: onToggleProtection,
+                    onMoveFolder: onMoveFolder
                 )
 
                 if isCreatingFolder, let targetID = newFolderParentID, targetID == row.node.id {
@@ -622,6 +719,7 @@ struct FolderRow: View {
     let onArchiveFolder: (Folder) -> Void
     let onNewSubfolder: (Folder) -> Void
     let onToggleProtection: (Folder) -> Void
+    let onMoveFolder: (Folder) -> Void
 
     private var hasChildren: Bool {
         node.children != nil && !node.children!.isEmpty
@@ -668,11 +766,15 @@ struct FolderRow: View {
             Button(action: { onRenameFolder(node.folder) }) {
                 Label("Rename", systemImage: "pencil")
             }
+            Divider()
             Button(action: { onToggleProtection(node.folder) }) {
                 Label(node.folder.protected ? "Unprotect" : "Protect", systemImage: node.folder.protected ? "lock.open" : "lock")
             }
             Button(action: { onArchiveFolder(node.folder) }) {
                 Label("Archive...", systemImage: "archivebox")
+            }
+            Button(action: { onMoveFolder(node.folder) }) {
+                Label("Move to Folder...", systemImage: "folder")
             }
             Divider()
             Button(role: .destructive) {
@@ -681,6 +783,7 @@ struct FolderRow: View {
                 Label("Delete", systemImage: "trash")
             }
         }
+        .tag(SidebarItem.folder(node.folder))
     }
 }
 
@@ -757,6 +860,401 @@ struct ArchiveSheetView: View {
                     .buttonStyle(.borderedProminent)
                 }
             }
+        }
+    }
+}
+
+struct FolderMoveSheetView: View {
+    @ObservedObject var viewModel: DocumentListViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedParent: UUID?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Move Folder") {
+                    if let folder = viewModel.folderToMove {
+                        Text("Move \"\(folder.name)\" to:")
+                            .font(.body)
+                    }
+                }
+
+                Section("Destination") {
+                    Button(action: { selectedParent = nil }) {
+                        HStack {
+                            Image(systemName: "house.fill")
+                                .foregroundColor(selectedParent == nil ? .accentColor : .secondary)
+                            Text("All Documents (Root)")
+                                .fontWeight(selectedParent == nil ? .medium : .regular)
+                                .foregroundColor(selectedParent == nil ? .accentColor : .primary)
+                            Spacer()
+                            if selectedParent == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider()
+
+                    ForEach(viewModel.folderTree) { node in
+                        FolderMoveTargetRow(
+                            node: node,
+                            selectedParent: $selectedParent,
+                            folderToMove: viewModel.folderToMove
+                        )
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle("Move Folder")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                        viewModel.showFolderMoveSheet = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Move") {
+                        viewModel.performFolderMove(to: selectedParent)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .frame(width: 320, height: 360)
+    }
+}
+
+struct FolderMoveTargetRow: View {
+    let node: DocumentListViewModel.FolderNode
+    @Binding var selectedParent: UUID?
+    let folderToMove: Folder?
+    @State private var depth: Int = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                if node.folder.id != folderToMove?.id {
+                    selectedParent = node.folder.id
+                }
+            }) {
+                HStack {
+                    Image(systemName: node.folder.protected ? "lock.fill" : "folder.fill")
+                        .foregroundColor(node.folder.id == folderToMove?.id ? .gray : (selectedParent == node.folder.id ? .accentColor : .secondary))
+                    Text(node.name)
+                        .fontWeight(selectedParent == node.folder.id ? .medium : .regular)
+                        .foregroundColor(node.folder.id == folderToMove?.id ? .gray : .primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    if selectedParent == node.folder.id {
+                        Image(systemName: "checkmark")
+                            .foregroundColor(.accentColor)
+                    }
+                    if node.folder.id == folderToMove?.id {
+                        Text("(current)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(node.folder.id == folderToMove?.id)
+            .padding(.leading, CGFloat(depth) * 16)
+
+            if let children = node.children {
+                ForEach(children) { child in
+                    FolderMoveTargetRow(
+                        node: child,
+                        selectedParent: $selectedParent,
+                        folderToMove: folderToMove,
+                        depth: depth + 1
+                    )
+                }
+            }
+        }
+    }
+
+    init(node: DocumentListViewModel.FolderNode, selectedParent: Binding<UUID?>, folderToMove: Folder?, depth: Int = 0) {
+        self.node = node
+        self._selectedParent = selectedParent
+        self.folderToMove = folderToMove
+        self._depth = State(initialValue: depth)
+    }
+}
+
+struct HelpSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    helpSection(
+                        title: "Getting Started",
+                        icon: "sparkles",
+                        content: [
+                            "Import documents by clicking the Import button or dragging files into PandyDoc",
+                            "Create folders to organize your documents using the + button in the sidebar",
+                            "Right-click on any folder or document for additional options",
+                            "Select a document to preview it in the right panel"
+                        ]
+                    )
+
+                    helpSection(
+                        title: "Document Management",
+                        icon: "doc.text",
+                        content: [
+                            "Check Out a document to edit it - a working copy opens in the default app",
+                            "Save your changes and Check In to create a new version",
+                            "Lock documents to prevent others from editing",
+                            "View version history to see all changes and restore previous versions",
+                            "Export documents to save a copy outside PandyDoc"
+                        ]
+                    )
+
+                    helpSection(
+                        title: "Templates",
+                        icon: "doc.on.doc",
+                        content: [
+                            "Add any document to Templates for reuse",
+                            "Create new documents from templates with a single click",
+                            "Templates are stored in a special Templates folder"
+                        ]
+                    )
+
+                    helpSection(
+                        title: "Print to PandyDoc",
+                        icon: "printer",
+                        content: [
+                            "Install the PDF Service from Printer Setup to add 'Save to PandyDoc' to print dialogs",
+                            "From any app, press Cmd+P and select 'Save to PandyDoc' from the PDF menu",
+                            "The PDF will be saved directly to your PandyDoc library"
+                        ]
+                    )
+
+                    helpSection(
+                        title: "Folder Organization",
+                        icon: "folder",
+                        content: [
+                            "Create nested folder structures for better organization",
+                            "Right-click folders to create subfolders, rename, move, or archive",
+                            "Drag and drop documents directly onto folders to import them",
+                            "Protect folders to prevent accidental deletion"
+                        ]
+                    )
+
+                    helpSection(
+                        title: "Supported Formats",
+                        icon: "doc.text.magnifyingglass",
+                        content: [
+                            "PDF - Native preview with PDFKit",
+                            "Pages, Numbers, Keynote - QuickLook preview",
+                            "Word (DOCX), PowerPoint (PPTX), Excel (XLSX) - QuickLook preview",
+                            "Text (TXT) and Rich Text (RTF) - QuickLook preview"
+                        ]
+                    )
+                }
+                .padding()
+            }
+            .navigationTitle("PandyDoc Help")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .frame(width: 520, height: 520)
+    }
+
+    private func helpSection(title: String, icon: String, content: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(.accentColor)
+                Text(title)
+                    .font(.headline)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(content, id: \.self) { item in
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 4))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 6)
+                        Text(item)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct GettingStartedSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Image(systemName: "pawprint.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.accentColor)
+                        Text("Welcome to PandyDoc")
+                            .font(.title)
+                            .fontWeight(.bold)
+                        Text("Your document management system for macOS")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Divider()
+
+                    GettingStartedStep(
+                        number: 1,
+                        title: "Import Your Documents",
+                        description: "Click Import or drag files into PandyDoc. You can also import entire folders.",
+                        shortcut: "Cmd+I"
+                    )
+
+                    GettingStartedStep(
+                        number: 2,
+                        title: "Organize with Folders",
+                        description: "Create folders and subfolders to keep your documents organized. Right-click any folder for more options.",
+                        shortcut: nil
+                    )
+
+                    GettingStartedStep(
+                        number: 3,
+                        title: "Check Out & Edit",
+                        description: "Right-click a document and select Check Out. It opens in your default app for editing.",
+                        shortcut: nil
+                    )
+
+                    GettingStartedStep(
+                        number: 4,
+                        title: "Check In Changes",
+                        description: "When done editing, check in the document to save a new version with optional notes.",
+                        shortcut: "Cmd+Shift+S"
+                    )
+
+                    GettingStartedStep(
+                        number: 5,
+                        title: "Print from Any App",
+                        description: "Install the PDF Service in Printer Setup, then select 'Save to PandyDoc' from the PDF menu in any print dialog.",
+                        shortcut: nil
+                    )
+                }
+                .padding()
+            }
+            .navigationTitle("Getting Started")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .frame(width: 480, height: 520)
+    }
+}
+
+struct GettingStartedStep: View {
+    let number: Int
+    let title: String
+    let description: String
+    let shortcut: String?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Text("\(number)")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(title)
+                        .font(.headline)
+                    if let shortcut = shortcut {
+                        Text(shortcut)
+                            .font(.caption)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.15))
+                            .cornerRadius(4)
+                    }
+                }
+                Text(description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+struct KeyboardShortcutsSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("File Operations") {
+                    ShortcutRow(action: "Import Document", shortcut: "Cmd+I")
+                    ShortcutRow(action: "Import Folder", shortcut: "Cmd+Opt+I")
+                    ShortcutRow(action: "Check In Document", shortcut: "Cmd+Shift+S")
+                }
+
+                Section("Navigation") {
+                    ShortcutRow(action: "Show All Documents", shortcut: "Cmd+1")
+                    ShortcutRow(action: "Show Templates", shortcut: "Cmd+2")
+                    ShortcutRow(action: "Toggle Sidebar", shortcut: "Cmd+Opt+0")
+                }
+
+                Section("Help") {
+                    ShortcutRow(action: "Open Help", shortcut: "Cmd+?")
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle("Keyboard Shortcuts")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .frame(width: 400, height: 340)
+    }
+}
+
+struct ShortcutRow: View {
+    let action: String
+    let shortcut: String
+
+    var body: some View {
+        HStack {
+            Text(action)
+            Spacer()
+            Text(shortcut)
+                .font(.caption)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.secondary.opacity(0.15))
+                .cornerRadius(4)
+                .monospacedDigit()
         }
     }
 }

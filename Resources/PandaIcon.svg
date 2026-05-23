@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90D9"/>
+      <stop offset="100%" style="stop-color:#2C5F8A"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="stand" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#C0C0C0"/>
+      <stop offset="100%" style="stop-color:#808080"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="512" fill="url(#bg)"/>
+  
+  <!-- Mac Computer -->
+  <!-- Monitor body -->
+  <rect x="256" y="200" width="512" height="384" rx="24" fill="#2d2d2d"/>
+  
+  <!-- Screen bezel -->
+  <rect x="272" y="216" width="480" height="352" rx="12" fill="#1a1a1a"/>
+  
+  <!-- Screen -->
+  <rect x="280" y="224" width="464" height="328" rx="8" fill="url(#screen)"/>
+  
+  <!-- Screen glow -->
+  <rect x="280" y="224" width="464" height="328" rx="8" fill="none" stroke="#4A90D9" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Camera dot -->
+  <circle cx="512" cy="236" r="4" fill="#333"/>
+  
+  <!-- Stand neck -->
+  <rect x="486" y="584" width="52" height="60" fill="#C0C0C0"/>
+  
+  <!-- Stand base -->
+  <rect x="400" y="640" width="224" height="16" rx="8" fill="url(#stand)"/>
+  
+  <!-- Apple logo on chin (simplified) -->
+  <path d="M512 570 c-8 -12 -20 -20 -32 -20 c-12 0 -24 8 -32 20 c-8 12 -12 28 -12 40 c0 20 8 36 20 44 c12 8 28 12 44 12 c16 0 32 -4 44 -12 c12 -8 20 -24 20 -44 c0 -12 -4 -28 -12 -40 z" fill="#555" opacity="0.3"/>
+  
+  <!-- Panda -->
+  <!-- Body -->
+  <ellipse cx="512" cy="780" rx="140" ry="120" fill="white"/>
+  
+  <!-- Left arm -->
+  <ellipse cx="380" cy="760" rx="50" ry="80" fill="white" transform="rotate(-15 380 760)"/>
+  
+  <!-- Right arm -->
+  <ellipse cx="644" cy="760" rx="50" ry="80" fill="white" transform="rotate(15 644 760)"/>
+  
+  <!-- Left leg -->
+  <ellipse cx="440" cy="880" rx="45" ry="50" fill="white"/>
+  
+  <!-- Right leg -->
+  <ellipse cx="584" cy="880" rx="45" ry="50" fill="white"/>
+  
+  <!-- Head -->
+  <circle cx="512" cy="660" r="100" fill="white"/>
+  
+  <!-- Left ear -->
+  <circle cx="430" cy="580" r="40" fill="#1a1a1a"/>
+  
+  <!-- Right ear -->
+  <circle cx="594" cy="580" r="40" fill="#1a1a1a"/>
+  
+  <!-- Eye patches -->
+  <ellipse cx="470" cy="650" rx="35" ry="28" fill="#1a1a1a" transform="rotate(-10 470 650)"/>
+  <ellipse cx="554" cy="650" rx="35" ry="28" fill="#1a1a1a" transform="rotate(10 554 650)"/>
+  
+  <!-- Eyes -->
+  <circle cx="470" cy="648" r="14" fill="white"/>
+  <circle cx="554" cy="648" r="14" fill="white"/>
+  <circle cx="474" cy="646" r="7" fill="#1a1a1a"/>
+  <circle cx="558" cy="646" r="7" fill="#1a1a1a"/>
+  <circle cx="476" cy="643" r="3" fill="white"/>
+  <circle cx="560" cy="643" r="3" fill="white"/>
+  
+  <!-- Nose -->
+  <ellipse cx="512" cy="680" rx="12" ry="8" fill="#1a1a1a"/>
+  
+  <!-- Mouth -->
+  <path d="M495 695 Q512 710 529 695" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Cheeks -->
+  <circle cx="445" cy="685" r="12" fill="#FFB6C1" opacity="0.6"/>
+  <circle cx="579" cy="685" r="12" fill="#FFB6C1" opacity="0.6"/>
+</svg>

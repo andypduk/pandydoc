@@ -8,6 +8,14 @@ struct Folder: Codable, Identifiable, Hashable {
     var updatedAt: Date
     var protected: Bool
 
+    static func == (lhs: Folder, rhs: Folder) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
     enum CodingKeys: String, CodingKey {
         case id, name, parentID, createdAt, updatedAt, protected
     }

@@ -2,138 +2,172 @@ import SwiftUI
 
 struct PrinterSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var installOutput = ""
-    @State private var isInstalling = false
-    
+    @State private var isInstallingService = false
+    @State private var isInstallingPrinter = false
+    @State private var serviceInstalled = false
+    @State private var printerInstalled = false
+    @State private var statusMessage: String?
+    @State private var showStatus = false
+
+    private let printerService = PDFPrinterService.shared
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("PandyDoc Printer Setup") {
+                Section("Save to PandyDoc") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Install PandyDoc as a system printer to capture PDFs from any application.")
-                            .font(.body)
-                        
-                        LabeledContent("Printer Name", value: "PandyDoc PDF")
-                        LabeledContent("Type", value: "Virtual PDF Printer")
-                        LabeledContent("Location", value: "Local")
-                    }
-                }
-                
-                Section("Installation Steps") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        StepView(number: 1, text: "Click Install to setup the CUPS printer backend")
-                        StepView(number: 2, text: "Open any application and select Print (Cmd+P)")
-                        StepView(number: 3, text: "Select 'PandyDoc PDF' from the printer list")
-                        StepView(number: 4, text: "The PDF will be saved to PandyDoc automatically")
-                    }
-                }
-                
-                Section("Manual Installation") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("You can also install manually via Terminal:")
+                        HStack {
+                            Image(systemName: "doc.badge.plus")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                            Text("PDF Print Service")
+                                .font(.headline)
+                        }
+
+                        Text("Adds 'Save to PandyDoc' to the PDF menu in any print dialog. No admin privileges required.")
                             .font(.caption)
-                        
-                        ScrollView(.horizontal) {
-                            Text(manualInstallCommand)
-                                .font(.system(.caption, design: .monospaced))
-                                .padding(8)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(4)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            Image(systemName: serviceInstalled ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(serviceInstalled ? .green : .secondary)
+                            Text(serviceInstalled ? "Installed" : "Not installed")
+                                .font(.caption)
+                                .foregroundColor(serviceInstalled ? .green : .secondary)
+                            Spacer()
+                            Button(action: installPDFService) {
+                                if isInstallingService {
+                                    ProgressView().scaleEffect(0.8)
+                                } else {
+                                    Label(serviceInstalled ? "Reinstall" : "Install", systemImage: "arrow.down.circle")
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(isInstallingService)
                         }
-                        
-                        Button("Copy Command") {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(manualInstallCommand, forType: .string)
+                    }
+                }
+
+                Section("System Printer") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "printer")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                            Text("PandyDoc PDF Printer")
+                                .font(.headline)
                         }
-                        .buttonStyle(.bordered)
+
+                        Text("Installs a virtual printer. Requires admin privileges and Terminal commands.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            Image(systemName: printerInstalled ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(printerInstalled ? .green : .secondary)
+                            Text(printerInstalled ? "Installed" : "Not installed")
+                                .font(.caption)
+                                .foregroundColor(printerInstalled ? .green : .secondary)
+                            Spacer()
+                            Button(action: installSystemPrinter) {
+                                if isInstallingPrinter {
+                                    ProgressView().scaleEffect(0.8)
+                                } else {
+                                    Label("Setup", systemImage: "terminal")
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(isInstallingPrinter)
+                        }
+                    }
+                }
+
+                Section("How It Works") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HowItWorksStep(number: 1, text: "Open any application and press Cmd+P to print")
+                        HowItWorksStep(number: 2, text: "Click the PDF dropdown in the print dialog")
+                        HowItWorksStep(number: 3, text: "Select 'Save to PandyDoc' from the menu")
+                        HowItWorksStep(number: 4, text: "The PDF is saved directly to your PandyDoc library")
                     }
                 }
             }
             .formStyle(.grouped)
             .navigationTitle("Printer Setup")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: { installPrinter() }) {
-                        if isInstalling {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Installing...")
-                        } else {
-                            Label("Install Printer", systemImage: "printer")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isInstalling)
-                }
-                
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
         }
-        .frame(width: 450, height: 400)
+        .frame(width: 450, height: 480)
+        .onAppear {
+            checkInstallStatus()
+        }
+        .alert(statusMessage ?? "", isPresented: $showStatus) {
+            Button("OK", role: .cancel) {}
+        }
     }
-    
-    private var manualInstallCommand: String {
-        """
-        sudo lpadmin -p PandyDoc -E -v pandydoc://localhost \
-          -P /Library/Printers/PPDs/Contents/Resources/PandyDoc.ppd
-        """
-    }
-    
-    private func installPrinter() {
-        isInstalling = true
 
+    private func checkInstallStatus() {
+        serviceInstalled = printerService.isPDFServiceInstalled()
+        printerInstalled = checkPrinterInstalled()
+    }
+
+    private func checkPrinterInstalled() -> Bool {
         let process = Process()
-        process.launchPath = "/bin/bash"
-        process.arguments = ["-c", """
-        echo "Creating directories..."
-        mkdir -p ~/Library/Application\\ Support/PandyDoc/Incoming
-        mkdir -p ~/Library/Application\\ Support/PandyDoc/Processed
-        echo "Done. Please run the following command in Terminal with sudo:"
-        echo ""
-        echo "\(manualInstallCommand)"
-        echo ""
-        echo "Note: Full installation requires admin privileges."
-        """
-        ]
-        
+        process.launchPath = "/usr/bin/lpstat"
+        process.arguments = ["-p", "PandyDoc"]
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        
+        try? process.run()
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }
+
+    private func installPDFService() {
+        isInstallingService = true
+        let success = printerService.installPDFService()
+        isInstallingService = false
+        serviceInstalled = success
+        statusMessage = success ? "PDF Service installed successfully. 'Save to PandyDoc' is now available in print dialogs." : "Failed to install PDF Service"
+        showStatus = true
+    }
+
+    private func installSystemPrinter() {
+        let command = printerService.setupCUPSPrinter()
+        let scriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("install_pandydoc_printer.sh")
+
         do {
-            try process.run()
-            process.waitUntilExit()
-            
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            installOutput = String(data: data, encoding: .utf8) ?? ""
+            try command.write(to: scriptURL, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptURL.path)
+
+            NSWorkspace.shared.open(scriptURL)
+
+            statusMessage = "Terminal will open with the install script. Enter your password when prompted."
+            showStatus = true
         } catch {
-            installOutput = "Error: \(error.localizedDescription)"
+            statusMessage = "Failed to create install script: \(error.localizedDescription)"
+            showStatus = true
         }
-        
-        isInstalling = false
     }
 }
 
-struct StepView: View {
+struct HowItWorksStep: View {
     let number: Int
     let text: String
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Circle()
-                .fill(Color.blue)
-                .frame(width: 24, height: 24)
-                .overlay(
-                    Text("\(number)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                )
-            
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: 24, height: 24)
+                Text("\(number)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
             Text(text)
                 .font(.body)
                 .frame(maxWidth: .infinity, alignment: .leading)

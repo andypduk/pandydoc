@@ -1,3 +1,0 @@
-module SQLite {
-    header "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/include/SQLite-Swift.h"
-}

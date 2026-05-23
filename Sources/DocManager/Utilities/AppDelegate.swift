@@ -4,9 +4,17 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        setupAppIcon()
         setupNotifications()
         FolderAccessManager.shared.resolveAllBookmarks()
         NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    private func setupAppIcon() {
+        if let iconURL = Bundle.main.url(forResource: "PandaIcon", withExtension: "icns"),
+           let icon = NSImage(contentsOf: iconURL) {
+            NSApplication.shared.applicationIconImage = icon
+        }
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -38,6 +46,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .importDocument,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleImportFolder),
+            name: .importFolder,
+            object: nil
+        )
         
         NotificationCenter.default.addObserver(
             self,
@@ -45,6 +60,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .checkInDocument,
             object: nil
         )
+    }
+
+    @objc private func handleImportFolder(_ notification: Notification) {
+        guard let url = notification.userInfo?["url"] as? URL else { return }
+        _ = url.startAccessingSecurityScopedResource()
+        let folderURL = url
+        try? FolderAccessManager.shared.grantAccess(to: folderURL)
+        try? DocumentStorage.shared.importFolderIfNotExists(url: folderURL)
+        url.stopAccessingSecurityScopedResource()
+        FolderAccessManager.shared.resolveAllBookmarks()
     }
     
     @objc private func handleImportDocument() {
@@ -124,5 +149,25 @@ extension DocumentStorage {
             object: nil,
             userInfo: ["documentId": document.id, "documentName": document.name]
         )
+    }
+
+    func importFolderIfNotExists(url: URL) throws {
+        let fileManager = FileManager.default
+
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            throw NSError(domain: "PandyDoc", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to read folder contents"])
+        }
+
+        let items = enumerator.allObjects.compactMap { $0 as? URL }
+        for fileURL in items {
+            let attributes = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
+            if attributes.isDirectory != true {
+                try importDocumentIfNotExists(url: fileURL)
+            }
+        }
     }
 }

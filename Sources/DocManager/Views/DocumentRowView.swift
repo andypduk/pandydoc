@@ -91,6 +91,9 @@ struct DocumentRowView: View {
             case .xlsx:
                 Image(systemName: "tablecells")
                     .foregroundColor(.green)
+            case .pptx:
+                Image(systemName: "play.rectangle.fill")
+                    .foregroundColor(.orange)
             case .txt:
                 Image(systemName: "doc.plaintext")
                     .foregroundColor(.gray)
@@ -160,6 +163,10 @@ struct DocumentRowView: View {
 
         Button(action: { viewModel.startRename(document) }) {
             Label("Rename", systemImage: "pencil")
+        }
+
+        Button(action: { viewModel.exportDocument(document) }) {
+            Label("Export...", systemImage: "square.and.arrow.up")
         }
 
         Button(action: { viewModel.openDocument(document: document) }) {

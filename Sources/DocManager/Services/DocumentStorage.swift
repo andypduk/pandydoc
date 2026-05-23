@@ -24,6 +24,7 @@ protocol DocumentStorageProtocol {
     func deleteFolder(id: UUID) throws
     func updateFolder(_ folder: Folder) throws
     func toggleFolderProtection(id: UUID) throws
+    func moveFolder(id: UUID, to parentID: UUID?) throws
     func toggleDocumentProtection(id: UUID) throws
     func getAllDocumentsRecursive() -> [Document]
     func getCheckedOutByUser(username: String) -> [Document]
@@ -143,6 +144,12 @@ final class DocumentStorage: DocumentStorageProtocol {
             updatedDoc.updatedAt = Date()
             try db.updateDocument(db: conn, document: updatedDoc)
         }
+        
+        NotificationCenter.default.post(
+            name: .documentVersionCreated,
+            object: nil,
+            userInfo: ["documentId": documentId, "versionNumber": versionNumber]
+        )
         
         return version
     }
@@ -270,6 +277,21 @@ final class DocumentStorage: DocumentStorageProtocol {
     func toggleFolderProtection(id: UUID) throws {
         let conn = try db.getConnection()
         try db.toggleFolderProtection(db: conn, id: id)
+    }
+
+    func moveFolder(id: UUID, to parentID: UUID?) throws {
+        guard var folder = try getFolder(id: id) else {
+            throw NSError(domain: "PandyDoc", code: 1, userInfo: [NSLocalizedDescriptionKey: "Folder not found"])
+        }
+        folder.parentID = parentID
+        folder.updatedAt = Date()
+        let conn = try db.getConnection()
+        try db.updateFolder(db: conn, folder: folder)
+    }
+
+    private func getFolder(id: UUID) throws -> Folder? {
+        let conn = try db.getConnection()
+        return try db.getFolder(db: conn, id: id)
     }
 
     func toggleDocumentProtection(id: UUID) throws {
