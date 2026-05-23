@@ -388,13 +388,20 @@ final class DocumentListViewModel: ObservableObject {
         }
     }
 
-    private func collectDescendantIDs(of folderID: UUID) -> Set<UUID> {
+    private func collectDescendantIDs(of folderID: UUID, visited: inout Set<UUID>) -> Set<UUID> {
         var ids = Set<UUID>()
+        visited.insert(folderID)
         for child in allFolders where child.parentID == folderID {
+            guard !visited.contains(child.id) else { continue }
             ids.insert(child.id)
-            ids.formUnion(collectDescendantIDs(of: child.id))
+            ids.formUnion(collectDescendantIDs(of: child.id, visited: &visited))
         }
         return ids
+    }
+
+    private func collectDescendantIDs(of folderID: UUID) -> Set<UUID> {
+        var visited = Set<UUID>()
+        return collectDescendantIDs(of: folderID, visited: &visited)
     }
 
     func startRenameFolder(_ folder: Folder) {

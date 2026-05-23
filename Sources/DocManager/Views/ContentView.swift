@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var showHelpSheet = false
     @State private var showGettingStartedSheet = false
     @State private var showShortcutsSheet = false
+    @State private var expandedFolders: Set<UUID> = []
 
     var body: some View {
         NavigationSplitView {
@@ -263,7 +264,7 @@ struct ContentView: View {
             }
 
             Section {
-                FolderTreeView(nodes: viewModel.folderTree, selection: $sidebarSelection,
+                FolderTreeView(nodes: viewModel.folderTree, selection: $sidebarSelection, expandedFolders: $expandedFolders,
                     onDropFile: { folderID, providers in
                         handleFileDrop(providers: providers, targetFolderID: folderID)
                     },
@@ -291,6 +292,9 @@ struct ContentView: View {
                     folderFieldFocused: $folderFieldFocused,
                     onCreateFolder: { name, parentID in
                         viewModel.createFolder(name: name, parentID: parentID)
+                        if let parentID {
+                            expandedFolders.insert(parentID)
+                        }
                         viewModel.newFolderName = ""
                         isCreatingFolder = false
                         viewModel.newFolderParentID = nil
@@ -568,7 +572,7 @@ struct ContentView: View {
 struct FolderTreeView: View {
     let nodes: [DocumentListViewModel.FolderNode]
     @Binding var selection: SidebarItem?
-    @State private var expandedFolders: Set<UUID> = []
+    @Binding var expandedFolders: Set<UUID>
     let onDropFile: (UUID, [NSItemProvider]) -> Void
     let onDeleteFolder: (Folder) -> Void
     let onRenameFolder: (Folder) -> Void

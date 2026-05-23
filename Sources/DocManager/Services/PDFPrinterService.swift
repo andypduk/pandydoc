@@ -209,71 +209,64 @@ final class PDFPrinterService {
     }
 
     func installPDFService() -> Bool {
-        let pdfServicesDir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/PDF Services", isDirectory: true)
-
-        guard let binaryURL = findSaveToPandyDocBinary() else {
-            print("PDFPrinterService: SaveToPandyDoc binary not found")
-            return false
-        }
+        let fileManager = FileManager.default
+        let homeDir = fileManager.homeDirectoryForCurrentUser
+        let pdfServicesDir = homeDir.appendingPathComponent("Library/PDF Services", isDirectory: true)
+        let incomingPath = homeDir.appendingPathComponent("Library/Application Support/PandyDoc/Incoming").path
 
         do {
-            try FileManager.default.createDirectory(at: pdfServicesDir, withIntermediateDirectories: true)
+            try fileManager.createDirectory(at: pdfServicesDir, withIntermediateDirectories: true)
 
             let appBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
-            let macosDir = appBundleURL.appendingPathComponent("Contents/MacOS", isDirectory: true)
 
-            if FileManager.default.fileExists(atPath: appBundleURL.path) {
-                try FileManager.default.removeItem(at: appBundleURL)
+            if fileManager.fileExists(atPath: appBundleURL.path) {
+                try fileManager.removeItem(at: appBundleURL)
             }
 
-            try FileManager.default.createDirectory(at: macosDir, withIntermediateDirectories: true)
+            let appleScript = """
+            on open these_items
+                set incoming_dir to "\(incomingPath)"
+                do shell script "mkdir -p " & quoted form of incoming_dir
+                repeat with this_item in these_items
+                    set item_path to POSIX path of this_item
+                    set item_name to do shell script "basename " & quoted form of item_path
+                    set uuid to do shell script "uuidgen"
+                    set dest_path to incoming_dir & "/" & uuid & "-" & item_name
+                    do shell script "cp " & quoted form of item_path & " " & quoted form of dest_path
+                end repeat
+            end open
+            """
 
-            let destBinaryURL = macosDir.appendingPathComponent("SaveToPandyDoc")
-            try FileManager.default.copyItem(at: binaryURL, to: destBinaryURL)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destBinaryURL.path)
+            let scriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("SaveToPandyDoc.applescript")
+            try appleScript.write(to: scriptURL, atomically: true, encoding: .utf8)
 
-            let plist: [String: Any] = [
-                "CFBundleExecutable": "SaveToPandyDoc",
-                "CFBundleIdentifier": "com.pandydoc.save-to-pandydoc",
-                "CFBundleName": "Save to PandyDoc",
-                "CFBundlePackageType": "APPL",
-                "CFBundleVersion": "1",
-                "CFBundleShortVersionString": "1.0",
-                "LSMinimumSystemVersion": "14.0",
-                "LSUIElement": true,
-                "LSBackgroundOnly": true
-            ]
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/osacompile")
+            process.arguments = ["-o", appBundleURL.path, scriptURL.path]
+            try process.run()
+            process.waitUntilExit()
 
-            let plistData = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+            try? fileManager.removeItem(at: scriptURL)
+
+            guard process.terminationStatus == 0, fileManager.fileExists(atPath: appBundleURL.path) else {
+                print("PDFPrinterService: osacompile failed with exit code \(process.terminationStatus)")
+                return false
+            }
+
             let plistURL = appBundleURL.appendingPathComponent("Contents/Info.plist")
-            try plistData.write(to: plistURL)
+            if let plistData = try? Data(contentsOf: plistURL),
+               var plistDict = try? PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) as? [String: Any] {
+                plistDict["LSUIElement"] = true
+                let newData = try PropertyListSerialization.data(fromPropertyList: plistDict, format: .xml, options: 0)
+                try newData.write(to: plistURL)
+            }
 
+            print("PDFPrinterService: installed to \(appBundleURL.path)")
             return true
         } catch {
             print("PDFPrinterService: Failed to install PDF Service: \(error)")
             return false
         }
-    }
-
-    private func findSaveToPandyDocBinary() -> URL? {
-        let binaryName = "SaveToPandyDoc"
-
-        let searchPaths: [URL?] = [
-            Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent(binaryName),
-            Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/\(binaryName)"),
-            Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent(binaryName),
-            URL(fileURLWithPath: ".build/debug/\(binaryName)"),
-            URL(fileURLWithPath: ".build/arm64-apple-macosx/debug/\(binaryName)")
-        ]
-
-        for url in searchPaths {
-            if let url, FileManager.default.isExecutableFile(atPath: url.path) {
-                return url
-            }
-        }
-
-        return nil
     }
 
     func isPDFServiceInstalled() -> Bool {
