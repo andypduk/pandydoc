@@ -3,8 +3,10 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        initializeApp()
+        NSApp.setActivationPolicy(.regular)
         setupNotifications()
+        FolderAccessManager.shared.resolveAllBookmarks()
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -13,19 +15,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return true
     }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        FolderAccessManager.shared.releaseAllAccess()
+        return .terminateNow
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
+    }
     
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             handleDocumentOpen(url: url)
-        }
-    }
-    
-    private func initializeApp() {
-        do {
-            try DocumentStorage.shared.initializeStorage()
-            try PDFPrinterService.shared.initialize()
-        } catch {
-            print("Failed to initialize storage: \(error)")
         }
     }
     
@@ -51,14 +53,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         openPanel.canChooseDirectories = false
         openPanel.allowsMultipleSelection = true
         openPanel.allowedContentTypes = [.pdf, .data, .text, .rtf]
-        
+
         openPanel.begin { response in
             if response == .OK {
                 for url in openPanel.urls {
                     _ = url.startAccessingSecurityScopedResource()
+                    let folderURL = url.deletingLastPathComponent()
+                    try? FolderAccessManager.shared.grantAccess(to: folderURL)
                     try? DocumentStorage.shared.importDocumentIfNotExists(url: url)
                     url.stopAccessingSecurityScopedResource()
                 }
+                FolderAccessManager.shared.resolveAllBookmarks()
             }
         }
     }

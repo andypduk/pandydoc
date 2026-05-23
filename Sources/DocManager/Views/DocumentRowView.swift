@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DocumentRowView: View {
     let document: Document
@@ -22,6 +23,18 @@ struct DocumentRowView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+
+                if viewModel.isShowingAllDocuments,
+                   let folderName = viewModel.folderName(for: document) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "folder")
+                            .font(.caption2)
+                            .foregroundColor(.accentColor)
+                        Text(folderName)
+                            .font(.caption2)
+                            .foregroundColor(.accentColor)
+                    }
+                }
             }
             
             Spacer()
@@ -37,8 +50,30 @@ struct DocumentRowView: View {
                     .foregroundColor(.red)
                     .font(.caption)
             }
+
+            if document.protected {
+                Image(systemName: "shield.fill")
+                    .foregroundColor(.orange)
+                    .font(.caption)
+            }
         }
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onDrag {
+            let provider = NSItemProvider()
+            provider.suggestedName = document.fileName
+            provider.registerFileRepresentation(forTypeIdentifier: UTType.fileURL.identifier, fileOptions: [], visibility: .all) { completion in
+                let fileURL = URL(fileURLWithPath: document.filePath)
+                completion(fileURL, true, nil)
+                return nil
+            }
+            provider.registerDataRepresentation(forTypeIdentifier: "public.utf8-plain-text", visibility: .ownProcess) { completion in
+                let data = document.id.uuidString.data(using: .utf8) ?? Data()
+                completion(data, nil)
+                return nil
+            }
+            return provider
+        }
         .contextMenu {
             documentContextMenu
         }
@@ -104,8 +139,11 @@ struct DocumentRowView: View {
         }
         
         if document.isCheckedOut && document.checkedOutBy == NSFullUserName() {
-            Button(action: { viewModel.checkIn(document: document) }) {
+            Button(action: { viewModel.quickCheckIn(document: document) }) {
                 Label("Check In", systemImage: "square.and.arrow.up")
+            }
+            Button(action: { viewModel.checkInWithNotes(document: document) }) {
+                Label("Check In with Notes...", systemImage: "text.badge.checkmark")
             }
             Button(action: { viewModel.discardCheckOut(document: document) }) {
                 Label("Discard Changes", systemImage: "xmark.circle")
@@ -119,7 +157,11 @@ struct DocumentRowView: View {
         }
         
         Divider()
-        
+
+        Button(action: { viewModel.startRename(document) }) {
+            Label("Rename", systemImage: "pencil")
+        }
+
         Button(action: { viewModel.openDocument(document: document) }) {
             Label("Open", systemImage: "arrow.up.right.square")
         }
@@ -127,7 +169,25 @@ struct DocumentRowView: View {
         Button(action: { viewModel.showVersions(for: document) }) {
             Label("Version History", systemImage: "clock.arrow.circlepath")
         }
-        
+
+        if !viewModel.allFolders.isEmpty {
+            Divider()
+            
+            if viewModel.currentFolder != nil {
+                Button(action: { viewModel.moveDocument(documentID: document.id, to: nil) }) {
+                    Label("Move to Root", systemImage: "arrow.up.to.line")
+                }
+            }
+
+            Menu("Move to Folder") {
+                ForEach(viewModel.folderTree) { node in
+                    FolderMenuItem(node: node, action: { folderID in
+                        viewModel.moveDocument(documentID: document.id, to: folderID)
+                    })
+                }
+            }
+        }
+
         Divider()
         
         Button(role: .destructive, action: { viewModel.deleteDocument(document: document) }) {

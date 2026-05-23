@@ -16,6 +16,92 @@ final class DocumentListViewModel: ObservableObject {
     @Published var versions: [DocumentVersion] = []
     @Published var showCheckInSheet = false
     @Published var checkInNotes = ""
+    @Published var folders: [Folder] = []
+    @Published var currentFolder: Folder?
+    @Published var folderPath: [Folder] = []
+    @Published var showNewFolderAlert = false
+    @Published var newFolderName = ""
+    @Published var showCheckInNotesField = false
+    @Published var inlineCheckInNotes = ""
+    @Published var isShowingAllDocuments = true
+    @Published var isShowingTemplates = false
+    @Published var showRenameAlert = false
+    @Published var renameText = ""
+    private var documentToRename: Document?
+    @Published var showFolderRenameAlert = false
+    @Published var folderRenameText = ""
+    private var folderToRename: Folder?
+    @Published var folderNameLookup: [UUID: String] = [:]
+    @Published var allFolders: [Folder] = []
+    @Published var canNavigateBack = false
+    @Published var canNavigateForward = false
+    @Published var showDeleteFolderConfirmation = false
+    @Published var folderToDelete: Folder?
+    @Published var showArchiveSheet = false
+    @Published var archiveFolder: Folder?
+    @Published var archiveProgress: String?
+    @Published var newFolderParentID: UUID?
+    @Published var pendingImportURL: URL?
+    @Published var pendingImportIsFolder = false
+
+    private var templatesFolderID: UUID?
+    private let templatesFolderName = "Templates"
+
+    func getTemplatesFolderID() -> UUID? {
+        ensureTemplatesFolderExists()
+        return templatesFolderID
+    }
+
+    private var navigationHistory: [SidebarNavigation] = []
+    private var navigationIndex = -1
+
+    enum SidebarNavigation: Hashable {
+        case allDocuments
+        case templates
+        case folder(Folder)
+    }
+
+    var checkedOutCount: Int {
+        storage.getCheckedOutByUser(username: NSFullUserName()).count
+    }
+
+    struct FolderNode: Identifiable, Hashable {
+        let id: UUID
+        let name: String
+        let folder: Folder
+        var children: [FolderNode]?
+
+        static func == (lhs: FolderNode, rhs: FolderNode) -> Bool {
+            lhs.id == rhs.id
+        }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(id)
+        }
+    }
+
+    var folderTree: [FolderNode] {
+        let filtered = allFolders.filter { $0.id != templatesFolderID }
+        return buildFolderTree(from: filtered)
+    }
+
+    private func buildFolderTree(from folders: [Folder]) -> [FolderNode] {
+        func children(of parentID: UUID?) -> [FolderNode]? {
+            let childFolders = folders
+                .filter { $0.parentID == parentID }
+                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            guard !childFolders.isEmpty else { return nil }
+            return childFolders.map { folder in
+                FolderNode(
+                    id: folder.id,
+                    name: folder.name,
+                    folder: folder,
+                    children: children(of: folder.id)
+                )
+            }
+        }
+        return children(of: nil) ?? []
+    }
     
     private let storage: DocumentStorageProtocol
     private let checkInOut: CheckInOutProtocol
@@ -31,24 +117,572 @@ final class DocumentListViewModel: ObservableObject {
         self.editor = editor
         
         setupNotifications()
+        isLoading = true
+    }
+    
+    func loadInitialData() {
+        try? storage.initializeStorage()
         refreshDocuments()
+        if navigationHistory.isEmpty {
+            recordNavigation(.allDocuments)
+        }
+        isLoading = false
     }
     
     func refreshDocuments() {
-        documents = storage.getAllDocuments()
+        ensureTemplatesFolderExists()
+        
+        if isShowingTemplates, let templatesID = templatesFolderID {
+            documents = (try? storage.getDocumentsInFolder(folderID: templatesID)) ?? []
+        } else if let folder = currentFolder {
+            documents = (try? storage.getDocumentsInFolder(folderID: folder.id)) ?? []
+            isShowingAllDocuments = false
+            isShowingTemplates = false
+        } else {
+            documents = storage.getAllDocumentsRecursive()
+            if let templatesID = templatesFolderID {
+                documents = documents.filter { $0.parentID != templatesID }
+            }
+            isShowingAllDocuments = true
+            isShowingTemplates = false
+            buildFolderLookup()
+        }
+        folders = (try? storage.getFolders(parentID: currentFolder?.id)) ?? []
+        folders = folders.filter { $0.id != templatesFolderID }
+        allFolders = storage.getAllFolders().filter { $0.id != templatesFolderID }
         applyFilters()
+        if let sel = selectedDocument, let updated = documents.first(where: { $0.id == sel.id }) {
+            selectedDocument = updated
+        }
     }
     
     func searchDocuments() {
         if searchQuery.isEmpty && selectedTags.isEmpty {
-            documents = storage.getAllDocuments()
+            refreshDocuments()
         } else {
             documents = storage.searchDocuments(query: searchQuery, tags: selectedTags)
         }
         applyStatusFilter()
     }
+
+    func navigateToFolder(_ folder: Folder) {
+        folderPath.append(folder)
+        currentFolder = folder
+        recordNavigation(.folder(folder))
+        refreshDocuments()
+    }
+
+    func navigateUp() {
+        _ = folderPath.popLast()
+        currentFolder = folderPath.last
+        refreshDocuments()
+    }
+
+    func navigateToRoot() {
+        folderPath.removeAll()
+        currentFolder = nil
+        isShowingTemplates = false
+        recordNavigation(.allDocuments)
+        refreshDocuments()
+    }
+
+    func navigateToTemplates() {
+        ensureTemplatesFolderExists()
+        folderPath.removeAll()
+        currentFolder = nil
+        isShowingTemplates = true
+        refreshDocuments()
+        recordNavigation(.templates)
+    }
+
+    private func ensureTemplatesFolderExists() {
+        guard templatesFolderID == nil else { return }
+        let rootFolders = (try? storage.getFolders(parentID: nil)) ?? []
+        if let existing = rootFolders.first(where: { $0.name == templatesFolderName }) {
+            templatesFolderID = existing.id
+        } else if let created = try? storage.createFolder(name: templatesFolderName, parentID: nil) {
+            templatesFolderID = created.id
+        }
+    }
+
+    func createFromTemplate(_ document: Document) {
+        do {
+            let newName = "Copy of \(document.name)"
+            let fileExt = document.fileExtension
+            let newFileName = "\(newName).\(fileExt)"
+
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("PandyDoc/Templates", isDirectory: true)
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+            let destURL = tempDir.appendingPathComponent(newFileName)
+            if FileManager.default.fileExists(atPath: destURL.path) {
+                try FileManager.default.removeItem(at: destURL)
+            }
+            try FileManager.default.copyItem(atPath: document.filePath, toPath: destURL.path)
+
+            let attributes = try FileManager.default.attributesOfItem(atPath: destURL.path)
+            let fileSize = attributes[.size] as? Int64 ?? 0
+
+            let newDoc = Document.createNew(
+                name: newName,
+                fileName: newFileName,
+                filePath: destURL.path,
+                fileSize: fileSize,
+                parentID: document.parentID
+            )
+
+            try storage.saveDocument(newDoc)
+            _ = try storage.createVersion(
+                documentId: newDoc.id,
+                sourcePath: destURL.path,
+                changeNotes: "Created from template: \(document.name)"
+            )
+
+            refreshDocuments()
+            selectedDocument = newDoc
+        } catch {
+            errorMessage = "Failed to create from template: \(error.localizedDescription)"
+        }
+    }
+
+    func addToTemplates(_ document: Document) {
+        ensureTemplatesFolderExists()
+        guard let templatesID = templatesFolderID else {
+            errorMessage = "Failed to find or create Templates folder"
+            return
+        }
+        do {
+            try storage.moveDocument(documentID: document.id, to: templatesID)
+            refreshDocuments()
+            if selectedDocument?.id == document.id {
+                selectedDocument = documents.first { $0.id == document.id }
+            }
+        } catch {
+            errorMessage = "Failed to add to templates: \(error.localizedDescription)"
+        }
+    }
+
+    func removeFromTemplates(_ document: Document) {
+        do {
+            try storage.moveDocument(documentID: document.id, to: nil)
+            refreshDocuments()
+            if selectedDocument?.id == document.id {
+                selectedDocument = documents.first { $0.id == document.id }
+            }
+        } catch {
+            errorMessage = "Failed to remove from templates: \(error.localizedDescription)"
+        }
+    }
+
+    func navigateBack() {
+        guard navigationIndex > 0 else { return }
+        navigationIndex -= 1
+        updateNavigationState()
+        applyHistoryEntry()
+    }
+
+    func navigateForward() {
+        guard navigationIndex < navigationHistory.count - 1 else { return }
+        navigationIndex += 1
+        updateNavigationState()
+        applyHistoryEntry()
+    }
+
+    private func recordNavigation(_ entry: SidebarNavigation) {
+        if navigationIndex < navigationHistory.count - 1 {
+            navigationHistory.removeSubrange((navigationIndex + 1)...)
+        }
+        if let last = navigationHistory.last, last == entry {
+            return
+        }
+        navigationHistory.append(entry)
+        navigationIndex = navigationHistory.count - 1
+        updateNavigationState()
+    }
+
+    private func applyHistoryEntry() {
+        guard navigationIndex >= 0, navigationIndex < navigationHistory.count else { return }
+        switch navigationHistory[navigationIndex] {
+        case .allDocuments:
+            folderPath.removeAll()
+            currentFolder = nil
+            isShowingTemplates = false
+        case .templates:
+            folderPath.removeAll()
+            currentFolder = nil
+            ensureTemplatesFolderExists()
+            isShowingTemplates = true
+        case .folder(let folder):
+            if let idx = folderPath.firstIndex(where: { $0.id == folder.id }) {
+                folderPath = Array(folderPath.prefix(through: idx))
+            } else {
+                folderPath.append(folder)
+            }
+            currentFolder = folder
+            isShowingTemplates = false
+        }
+        refreshDocuments()
+    }
+
+    private func updateNavigationState() {
+        canNavigateBack = navigationIndex > 0
+        canNavigateForward = navigationIndex < navigationHistory.count - 1
+    }
+
+    func createFolder(name: String, parentID: UUID? = nil) {
+        let actualParent = parentID ?? currentFolder?.id
+        print("Creating folder: name=\(name), parentID=\(actualParent?.uuidString ?? "nil")")
+        do {
+            let folder = try storage.createFolder(name: name, parentID: actualParent)
+            print("Folder created: \(folder.id)")
+            refreshDocuments()
+        } catch {
+            print("Folder creation failed: \(error)")
+            errorMessage = "Failed to create folder: \(error.localizedDescription)"
+        }
+    }
+
+    func deleteFolder(_ folder: Folder) {
+        folderToDelete = folder
+        showDeleteFolderConfirmation = true
+    }
+
+    func confirmDeleteFolder() {
+        guard let folder = folderToDelete else { return }
+        do {
+            try storage.deleteFolder(id: folder.id)
+            refreshDocuments()
+            folderToDelete = nil
+            showDeleteFolderConfirmation = false
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func startRenameFolder(_ folder: Folder) {
+        folderToRename = folder
+        folderRenameText = folder.name
+        showFolderRenameAlert = true
+    }
+
+    func performFolderRename() {
+        guard let folder = folderToRename, !folderRenameText.isEmpty else {
+            showFolderRenameAlert = false
+            return
+        }
+        do {
+            var updated = folder
+            updated.name = folderRenameText
+            try storage.updateFolder(updated)
+            refreshDocuments()
+        } catch {
+            errorMessage = "Rename failed: \(error.localizedDescription)"
+        }
+        showFolderRenameAlert = false
+        folderToRename = nil
+    }
+
+    func checkOut(document: Document) {
+        do {
+            let response = try checkInOut.checkOut(documentId: document.id)
+            if response.success {
+                refreshDocuments()
+                selectedDocument = documents.first { $0.id == document.id }
+            } else {
+                errorMessage = response.error ?? "Check out failed"
+            }
+        } catch {
+            errorMessage = "Check out failed: \(error.localizedDescription)"
+        }
+    }
+
+    func quickCheckIn(document: Document) {
+        do {
+            _ = try checkInOut.checkIn(documentId: document.id, changeNotes: nil)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == document.id }
+        } catch {
+            errorMessage = "Check in failed: \(error.localizedDescription)"
+        }
+    }
+
+    func checkInWithNotes(document: Document) {
+        selectedDocument = document
+        showCheckInNotesField = true
+        inlineCheckInNotes = ""
+        showCheckInSheet = true
+    }
+
+    func performCheckIn(document: Document) {
+        do {
+            _ = try checkInOut.checkIn(documentId: document.id, changeNotes: checkInNotes.isEmpty ? nil : checkInNotes)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == document.id }
+            showCheckInSheet = false
+            checkInNotes = ""
+        } catch {
+            errorMessage = "Check in failed: \(error.localizedDescription)"
+        }
+    }
+
+    func saveWorkingCopy(document: Document) {
+        do {
+            _ = try checkInOut.saveWorkingCopy(documentId: document.id)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == document.id }
+        } catch {
+            errorMessage = "Save working copy failed: \(error.localizedDescription)"
+        }
+    }
+
+    func discardCheckOut(document: Document) {
+        do {
+            try checkInOut.discardCheckOut(documentId: document.id)
+            refreshDocuments()
+            if selectedDocument?.id == document.id {
+                selectedDocument = nil
+            }
+        } catch {
+            errorMessage = "Discard failed: \(error.localizedDescription)"
+        }
+    }
+
+    func lockDocument(document: Document) {
+        do {
+            try checkInOut.lock(documentId: document.id)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == document.id }
+        } catch {
+            errorMessage = "Lock failed: \(error.localizedDescription)"
+        }
+    }
+
+    func unlockDocument(document: Document) {
+        do {
+            try checkInOut.unlock(documentId: document.id)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == document.id }
+        } catch {
+            errorMessage = "Unlock failed: \(error.localizedDescription)"
+        }
+    }
+
+    func startRename(_ document: Document) {
+        documentToRename = document
+        renameText = document.name
+        showRenameAlert = true
+    }
+
+    func performRename() {
+        guard let document = documentToRename, !renameText.isEmpty else {
+            showRenameAlert = false
+            return
+        }
+        do {
+            var updated = document
+            updated.name = renameText
+            updated.fileName = renameText + "." + document.fileExtension
+            try storage.updateDocument(updated)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == document.id }
+        } catch {
+            errorMessage = "Rename failed: \(error.localizedDescription)"
+        }
+        showRenameAlert = false
+        documentToRename = nil
+    }
+
+    func openDocument(document: Document) {
+        let url = URL(fileURLWithPath: document.filePath)
+        NSWorkspace.shared.open(url)
+    }
+
+    func deleteDocument(document: Document) {
+        do {
+            try storage.deleteDocument(id: document.id)
+            refreshDocuments()
+            if selectedDocument?.id == document.id {
+                selectedDocument = nil
+            }
+        } catch {
+            errorMessage = "Delete failed: \(error.localizedDescription)"
+        }
+    }
+
+    func toggleDocumentProtection(_ document: Document) {
+        do {
+            try storage.toggleDocumentProtection(id: document.id)
+            refreshDocuments()
+        } catch {
+            errorMessage = "Failed to toggle protection: \(error.localizedDescription)"
+        }
+    }
+
+    func toggleFolderProtection(_ folder: Folder) {
+        do {
+            try storage.toggleFolderProtection(id: folder.id)
+            refreshDocuments()
+        } catch {
+            errorMessage = "Failed to toggle protection: \(error.localizedDescription)"
+        }
+    }
+
+    func restoreVersion(documentId: UUID, versionNumber: Int) {
+        do {
+            _ = try storage.restoreVersion(documentId: documentId, versionNumber: versionNumber)
+            refreshDocuments()
+            selectedDocument = documents.first { $0.id == documentId }
+        } catch {
+            errorMessage = "Restore failed: \(error.localizedDescription)"
+        }
+    }
+
+    func moveDocument(documentID: UUID, to folderID: UUID?) {
+        do {
+            try storage.moveDocument(documentID: documentID, to: folderID)
+            refreshDocuments()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func archiveFolder(_ folder: Folder) {
+        archiveFolder = folder
+        showArchiveSheet = true
+    }
+
+    func performArchive(to destinationURL: URL) {
+        guard let folder = archiveFolder else { return }
+        archiveProgress = "Archiving \"\(folder.name)\"..."
+
+        Task {
+            do {
+                let docs = try storage.getDocumentsInFolder(folderID: folder.id)
+                guard !docs.isEmpty else {
+                    archiveProgress = nil
+                    errorMessage = "Folder is empty, nothing to archive."
+                    return
+                }
+
+                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("PandyDoc/Archive/\(folder.id.uuidString)", isDirectory: true)
+                try? FileManager.default.removeItem(at: tempDir)
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+                for doc in docs {
+                    let src = URL(fileURLWithPath: doc.filePath)
+                    let dest = tempDir.appendingPathComponent(doc.fileName)
+                    if FileManager.default.fileExists(atPath: src.path) {
+                        try FileManager.default.copyItem(at: src, to: dest)
+                    }
+                }
+
+                let zipURL = destinationURL.appendingPathComponent("\(folder.name).zip")
+                try createZipArchive(from: tempDir, to: zipURL)
+                try? FileManager.default.removeItem(at: tempDir)
+
+                archiveProgress = nil
+                showArchiveSheet = false
+                archiveFolder = nil
+            } catch {
+                archiveProgress = nil
+                errorMessage = "Archive failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func createZipArchive(from sourceDir: URL, to zipURL: URL) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", sourceDir.path, zipURL.path]
+        try process.run()
+        process.waitUntilExit()
+
+        if process.terminationStatus != 0 {
+            throw NSError(domain: "PandyDoc", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create zip archive"])
+        }
+    }
     
-    func importDocument(fileURL: URL) {
+    func importDocument(fileURL: URL, to folderID: UUID? = nil) {
+        Task {
+            let started = fileURL.startAccessingSecurityScopedResource()
+            await performFileImportAsync(fileURL: fileURL, to: folderID)
+            if started {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
+        }
+    }
+
+    func importFolder(folderURL: URL) {
+        Task {
+            let started = folderURL.startAccessingSecurityScopedResource()
+            await performFolderImportAsync(folderURL: folderURL)
+            if started {
+                folderURL.stopAccessingSecurityScopedResource()
+            }
+        }
+    }
+
+    func importDocumentWithAccessCheck(fileURL: URL, to folderID: UUID? = nil) {
+        if !FolderAccessManager.shared.hasAccess(to: fileURL) {
+            pendingImportURL = fileURL
+            pendingImportIsFolder = false
+            return
+        }
+        Task {
+            let started = fileURL.startAccessingSecurityScopedResource()
+            await performFileImportAsync(fileURL: fileURL, to: folderID)
+            if started {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
+        }
+    }
+
+    func importFolderWithAccessCheck(folderURL: URL) {
+        if !FolderAccessManager.shared.hasAccess(to: folderURL) {
+            pendingImportURL = folderURL
+            pendingImportIsFolder = true
+            return
+        }
+        Task {
+            let started = folderURL.startAccessingSecurityScopedResource()
+            await performFolderImportAsync(folderURL: folderURL)
+            if started {
+                folderURL.stopAccessingSecurityScopedResource()
+            }
+        }
+    }
+
+    func grantAccessAndImport(folderURL: URL) {
+        do {
+            try FolderAccessManager.shared.grantAccess(to: folderURL)
+            FolderAccessManager.shared.resolveAllBookmarks()
+
+            if pendingImportIsFolder {
+                Task {
+                    let started = folderURL.startAccessingSecurityScopedResource()
+                    await performFolderImportAsync(folderURL: folderURL)
+                    if started {
+                        folderURL.stopAccessingSecurityScopedResource()
+                    }
+                }
+            } else if let url = pendingImportURL {
+                Task {
+                    let started = url.startAccessingSecurityScopedResource()
+                    await performFileImportAsync(fileURL: url, to: nil)
+                    if started {
+                        url.stopAccessingSecurityScopedResource()
+                    }
+                }
+            }
+            pendingImportURL = nil
+            pendingImportIsFolder = false
+        } catch {
+            errorMessage = "Failed to grant folder access: \(error.localizedDescription)"
+        }
+    }
+
+    private func performFileImportAsync(fileURL: URL, to folderID: UUID?) async {
         do {
             let fileName = fileURL.lastPathComponent
             let docName = (fileName as NSString).deletingPathExtension
@@ -69,7 +703,8 @@ final class DocumentListViewModel: ObservableObject {
                 name: docName,
                 fileName: fileName,
                 filePath: destURL.path,
-                fileSize: fileSize
+                fileSize: fileSize,
+                parentID: folderID
             )
             
             try storage.saveDocument(document)
@@ -79,108 +714,106 @@ final class DocumentListViewModel: ObservableObject {
                 changeNotes: "Initial import"
             )
             
-            refreshDocuments()
-        } catch {
-            errorMessage = "Failed to import document: \(error.localizedDescription)"
-        }
-    }
-    
-    func checkOut(document: Document) {
-        do {
-            let response = try checkInOut.checkOut(documentId: document.id)
-            if response.success {
+            await MainActor.run {
                 refreshDocuments()
-                if let tempPath = response.tempFilePath {
-                    NSWorkspace.shared.open(URL(fileURLWithPath: tempPath))
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to import document: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func performFolderImportAsync(folderURL: URL) async {
+        let fileManager = FileManager.default
+        let rootName = folderURL.lastPathComponent
+        var folderMap: [String: UUID] = [:]
+        var importCount = 0
+        var errorCount = 0
+
+        guard let rootFolder = try? storage.createFolder(name: rootName, parentID: currentFolder?.id) else {
+            await MainActor.run {
+                errorMessage = "Failed to create root folder. A folder with this name may already exist."
+            }
+            return
+        }
+        folderMap[""] = rootFolder.id
+
+        guard let enumerator = fileManager.enumerator(
+            at: folderURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            await MainActor.run {
+                errorMessage = "Failed to read folder contents"
+            }
+            return
+        }
+
+        let items = enumerator.allObjects.compactMap { $0 as? URL }
+        for fileURL in items {
+            let relativePath = String(fileURL.path.dropFirst(folderURL.path.count + 1))
+            let relativeDir = (relativePath as NSString).deletingLastPathComponent
+
+            do {
+                let attributes = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
+                if attributes.isDirectory == true {
+                    let folderName = fileURL.lastPathComponent
+                    let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
+                    let existingID = findExistingFolder(named: folderName, parentID: parentID)
+                    if let existing = existingID {
+                        folderMap[relativePath] = existing
+                    } else if let newFolder = try? storage.createFolder(name: folderName, parentID: parentID) {
+                        folderMap[relativePath] = newFolder.id
+                    } else {
+                        errorCount += 1
+                    }
+                } else {
+                    let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
+                    await performFileImportAsync(fileURL: fileURL, to: parentID)
+                    importCount += 1
                 }
-            } else {
-                errorMessage = response.error
+            } catch {
+                errorCount += 1
             }
-        } catch {
-            errorMessage = error.localizedDescription
         }
-    }
-    
-    func checkIn(document: Document) {
-        selectedDocument = document
-        checkInNotes = ""
-        showCheckInSheet = true
-    }
-    
-    func performCheckIn(document: Document) {
-        do {
-            _ = try checkInOut.checkIn(documentId: document.id, changeNotes: checkInNotes)
-            showCheckInSheet = false
-            checkInNotes = ""
+
+        await MainActor.run {
             refreshDocuments()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func discardCheckOut(document: Document) {
-        do {
-            try checkInOut.discardCheckOut(documentId: document.id)
-            refreshDocuments()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func lockDocument(document: Document) {
-        do {
-            try checkInOut.lock(documentId: document.id)
-            refreshDocuments()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func unlockDocument(document: Document) {
-        do {
-            try checkInOut.unlock(documentId: document.id)
-            refreshDocuments()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func openDocument(document: Document) {
-        do {
-            try editor.openWithApp(documentId: document.id)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func showVersions(for document: Document) {
-        selectedDocument = document
-        versions = storage.getVersions(documentId: document.id)
-        showVersionHistory = true
-    }
-    
-    func restoreVersion(documentId: UUID, versionNumber: Int) {
-        do {
-            _ = try storage.restoreVersion(documentId: documentId, versionNumber: versionNumber)
-            versions = storage.getVersions(documentId: documentId)
-            refreshDocuments()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func deleteDocument(document: Document) {
-        do {
-            try storage.deleteDocument(id: document.id)
-            if selectedDocument?.id == document.id {
-                selectedDocument = nil
+            if importCount > 0 {
+                if errorCount > 0 {
+                    errorMessage = "Imported \(importCount) files (\(errorCount) errors)"
+                }
+            } else if errorCount > 0 {
+                errorMessage = "Failed to import files"
             }
-            refreshDocuments()
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
-    
+
+    private func findExistingFolder(named name: String, parentID: UUID) -> UUID? {
+        let parentFolders = (try? storage.getFolders(parentID: parentID)) ?? []
+        return parentFolders.first(where: { $0.name == name })?.id
+    }
+
+    func folderName(for document: Document) -> String? {
+        guard let parentID = document.parentID else { return nil }
+        return folderNameLookup[parentID]
+    }
+
+    private func buildFolderLookup() {
+        var lookup: [UUID: String] = [:]
+        var stack: [UUID?] = [nil]
+        while let currentParent = stack.popLast() {
+            if let subFolders = try? storage.getFolders(parentID: currentParent) {
+                for folder in subFolders where folder.id != templatesFolderID {
+                    lookup[folder.id] = folder.name
+                    stack.append(folder.id)
+                }
+            }
+        }
+        folderNameLookup = lookup
+    }
+
     func getStatusIcon(_ status: DocumentStatus) -> String {
         switch status {
         case .available: return "checkmark.circle.fill"
@@ -212,7 +845,9 @@ final class DocumentListViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refreshDocuments()
+            Task { @MainActor [weak self] in
+                self?.refreshDocuments()
+            }
         }
         
         NotificationCenter.default.addObserver(
@@ -220,7 +855,25 @@ final class DocumentListViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refreshDocuments()
+            Task { @MainActor [weak self] in
+                self?.refreshDocuments()
+            }
         }
+
+        NotificationCenter.default.addObserver(
+            forName: .documentExternallyModified,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshDocuments()
+            }
+        }
+    }
+
+    func showVersions(for document: Document) {
+        selectedDocument = document
+        versions = storage.getVersions(documentId: document.id)
+        showVersionHistory = true
     }
 }

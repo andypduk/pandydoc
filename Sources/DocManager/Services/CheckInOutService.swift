@@ -10,6 +10,7 @@ enum DocumentError: Error, LocalizedError {
     case unauthorized
     case storageError(String)
     case checkoutFailed(String)
+    case protectedItem
     
     var errorDescription: String? {
         switch self {
@@ -31,6 +32,8 @@ enum DocumentError: Error, LocalizedError {
             return "Storage error: \(msg)"
         case .checkoutFailed(let msg):
             return "Checkout failed: \(msg)"
+        case .protectedItem:
+            return "This item is protected and cannot be deleted"
         }
     }
 }
@@ -38,6 +41,7 @@ enum DocumentError: Error, LocalizedError {
 protocol CheckInOutProtocol {
     func checkOut(documentId: UUID) throws -> CheckOutResponse
     func checkIn(documentId: UUID, changeNotes: String?) throws -> Document
+    func saveWorkingCopy(documentId: UUID) throws -> Document
     func discardCheckOut(documentId: UUID) throws
     func lock(documentId: UUID) throws
     func unlock(documentId: UUID) throws
@@ -95,7 +99,7 @@ final class CheckInOutService: CheckInOutProtocol {
     }
     
     func checkIn(documentId: UUID, changeNotes: String? = nil) throws -> Document {
-        guard var document = storage.getDocument(id: documentId) else {
+        guard let document = storage.getDocument(id: documentId) else {
             throw DocumentError.documentNotFound
         }
         
@@ -124,6 +128,9 @@ final class CheckInOutService: CheckInOutProtocol {
             changeNotes: changeNotes
         )
         
+        guard var document = storage.getDocument(id: documentId) else {
+            throw DocumentError.documentNotFound
+        }
         document.status = .available
         document.checkedOutBy = nil
         document.checkedOutAt = nil
@@ -132,6 +139,46 @@ final class CheckInOutService: CheckInOutProtocol {
         try storage.updateDocument(document)
         
         try? fileManager.removeItem(at: tempFileURL)
+        
+        return document
+    }
+    
+    func saveWorkingCopy(documentId: UUID) throws -> Document {
+        guard let document = storage.getDocument(id: documentId) else {
+            throw DocumentError.documentNotFound
+        }
+        
+        guard document.isCheckedOut, document.checkedOutBy == NSFullUserName() else {
+            throw DocumentError.documentNotCheckedOut
+        }
+        
+        let tempFileURL = tempDir.appendingPathComponent("\(document.id.uuidString)_\(document.fileName)")
+        
+        guard fileManager.fileExists(atPath: tempFileURL.path) else {
+            throw DocumentError.fileNotFound
+        }
+        
+        let destURL = URL(fileURLWithPath: document.filePath)
+        if fileManager.fileExists(atPath: destURL.path) {
+            try fileManager.removeItem(at: destURL)
+        }
+        try fileManager.copyItem(at: tempFileURL, to: destURL)
+        
+        let attributes = try fileManager.attributesOfItem(atPath: destURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        
+        _ = try storage.createVersion(
+            documentId: documentId,
+            sourcePath: destURL.path,
+            changeNotes: "Working copy saved"
+        )
+        
+        guard var document = storage.getDocument(id: documentId) else {
+            throw DocumentError.documentNotFound
+        }
+        document.fileSize = fileSize
+        document.updatedAt = Date()
+        try storage.updateDocument(document)
         
         return document
     }

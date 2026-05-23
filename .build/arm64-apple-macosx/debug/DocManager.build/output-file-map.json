@@ -23,12 +23,26 @@
     "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.swiftdeps",
     "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.dia"
   },
+  "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Folder.swift": {
+    "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.d",
+    "object": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.swift.o",
+    "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.swiftdeps",
+    "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.dia"
+  },
   "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift": {
     "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.d",
     "object": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o",
     "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService~partial.swiftmodule",
     "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swiftdeps",
     "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.dia"
+  },
+  "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DatabaseManager.swift": {
+    "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.d",
+    "object": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.swift.o",
+    "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.swiftdeps",
+    "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.dia"
   },
   "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentEditorService.swift": {
     "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentEditorService.d",
@@ -57,6 +71,13 @@
     "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher~partial.swiftmodule",
     "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swiftdeps",
     "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.dia"
+  },
+  "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FolderAccessManager.swift": {
+    "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.d",
+    "object": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.swift.o",
+    "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.swiftdeps",
+    "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.dia"
   },
   "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/PDFPrinterService.swift": {
     "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.d",
@@ -106,6 +127,13 @@
     "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView~partial.swiftmodule",
     "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.swiftdeps",
     "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.dia"
+  },
+  "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/FolderMoveMenu.swift": {
+    "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.d",
+    "object": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.swift.o",
+    "swiftmodule": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu~partial.swiftmodule",
+    "swift-dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.swiftdeps",
+    "diagnostics": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.dia"
   },
   "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/PrinterSetupSheet.swift": {
     "dependencies": "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.d",

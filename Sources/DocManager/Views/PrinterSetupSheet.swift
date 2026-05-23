@@ -85,9 +85,7 @@ struct PrinterSetupSheet: View {
     
     private func installPrinter() {
         isInstalling = true
-        
-        let script = PDFPrinterService.shared.setupCUPSPrinter()
-        
+
         let process = Process()
         process.launchPath = "/bin/bash"
         process.arguments = ["-c", """

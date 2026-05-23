@@ -9,7 +9,6 @@ final class FileWatcher {
     weak var delegate: FileWatcherDelegate?
     
     private var fileDescriptors: [String: Int32] = [:]
-    private var source: DispatchSourceFileSystemObject?
     private let queue = DispatchQueue(label: "com.pandydoc.filewatcher", attributes: .concurrent)
     
     private var monitorTimer: Timer?
@@ -32,11 +31,13 @@ final class FileWatcher {
         watchedFiles[filePath] = info
         
         if monitorTimer == nil {
-            monitorTimer = Timer.scheduledTimer(
-                withTimeInterval: 1.0,
-                repeats: true
-            ) { [weak self] _ in
-                self?.checkForChanges()
+            DispatchQueue.main.async {
+                self.monitorTimer = Timer.scheduledTimer(
+                    withTimeInterval: 1.0,
+                    repeats: true
+                ) { [weak self] _ in
+                    self?.checkForChanges()
+                }
             }
         }
     }

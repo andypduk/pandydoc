@@ -145,20 +145,36 @@ struct DocumentDetailView: View {
                 }
                 
                 if document.isCheckedOut && document.checkedOutBy == NSFullUserName() {
-                    HStack(spacing: 8) {
-                        Button(action: { viewModel.checkIn(document: document) }) {
-                            Label("Check In", systemImage: "checkmark.circle")
-                                .frame(maxWidth: .infinity)
+                    VStack(spacing: 8) {
+                        HStack(spacing: 8) {
+                            Button(action: { viewModel.quickCheckIn(document: document) }) {
+                                Label("Check In", systemImage: "checkmark.circle.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.green)
+                            
+                            Button(action: { viewModel.checkInWithNotes(document: document) }) {
+                                Label("Notes...", systemImage: "text.badge.checkmark")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.green)
-                        
-                        Button(action: { viewModel.discardCheckOut(document: document) }) {
-                            Label("Discard", systemImage: "xmark.circle")
-                                .frame(maxWidth: .infinity)
+
+                        HStack(spacing: 8) {
+                            Button(action: { viewModel.saveWorkingCopy(document: document) }) {
+                                Label("Save Working Copy", systemImage: "square.and.arrow.down")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button(action: { viewModel.discardCheckOut(document: document) }) {
+                                Label("Discard Changes", systemImage: "xmark.circle")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.red)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(.red)
                     }
                 }
                 

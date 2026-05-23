@@ -10,15 +10,25 @@ final class PDFPrinterService {
     private init(storage: DocumentStorageProtocol = DocumentStorage.shared) {
         self.storage = storage
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        
-        do {
-            let pandyDocSupport = appSupport.appendingPathComponent("PandyDoc", isDirectory: true)
-            try FileManager.default.createDirectory(at: pandyDocSupport, withIntermediateDirectories: true)
-            incomingDir = pandyDocSupport.appendingPathComponent("Incoming", isDirectory: true)
-        } catch {
-            incomingDir = homeDir.appendingPathComponent("PandyDoc/Incoming", isDirectory: true)
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            fatalError("Could not locate Application Support directory")
         }
+        let pandyDocSupport = appSupport.appendingPathComponent("PandyDoc", isDirectory: true)
+        
+        var canUseAppSupport = false
+        do {
+            try? FileManager.default.createDirectory(at: pandyDocSupport, withIntermediateDirectories: true)
+            let testFile = pandyDocSupport.appendingPathComponent(".write_test")
+            try "test".write(to: testFile, atomically: true, encoding: .utf8)
+            try? FileManager.default.removeItem(at: testFile)
+            canUseAppSupport = true
+        } catch {
+            print("PDFPrinterService: AppSupport not writable, using fallback")
+        }
+        
+        let baseDir = canUseAppSupport ? pandyDocSupport : homeDir.appendingPathComponent("Documents/PandyDoc", isDirectory: true)
+        incomingDir = baseDir.appendingPathComponent("Incoming", isDirectory: true)
+        try? FileManager.default.createDirectory(at: incomingDir, withIntermediateDirectories: true)
     }
     
     func initialize() throws {
@@ -50,7 +60,6 @@ final class PDFPrinterService {
     }
     
     func installPrinter() {
-        let printerName = "PandyDoc"
         let script = """
         #!/bin/bash
         

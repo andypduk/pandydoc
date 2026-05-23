@@ -76,7 +76,8 @@ final class DocumentWatcherService {
     }
     
     func watchDirectoryForChanges() {
-        let incomingURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let incomingURL = appSupport
             .appendingPathComponent("PandyDoc/Incoming", isDirectory: true)
         
         if !fileManager.fileExists(atPath: incomingURL.path) {

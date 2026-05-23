@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 struct VersionHistoryView: View {
     @ObservedObject var viewModel: DocumentListViewModel
@@ -19,7 +21,7 @@ struct VersionHistoryView: View {
                 }
             }
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 540, height: 400)
     }
 }
 
@@ -59,15 +61,24 @@ struct VersionRowView: View {
             
             Spacer()
             
-            Button(action: {
-                viewModel.restoreVersion(
-                    documentId: version.documentId,
-                    versionNumber: version.versionNumber
-                )
-            }) {
-                Label("Restore", systemImage: "arrow.counterclockwise")
+            HStack(spacing: 6) {
+                Button(action: {
+                    saveVersionAs(version)
+                }) {
+                    Label("Save As...", systemImage: "square.and.arrow.down")
+                }
+                .buttonStyle(.bordered)
+                
+                Button(action: {
+                    viewModel.restoreVersion(
+                        documentId: version.documentId,
+                        versionNumber: version.versionNumber
+                    )
+                }) {
+                    Label("Restore", systemImage: "arrow.counterclockwise")
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
         }
         .padding(.vertical, 4)
     }
@@ -80,6 +91,32 @@ struct VersionRowView: View {
             .padding(.vertical, 4)
             .background(Color.blue.opacity(0.15))
             .cornerRadius(12)
+    }
+
+    private func saveVersionAs(_ version: DocumentVersion) {
+        let savePanel = NSSavePanel()
+        savePanel.title = "Save Version As"
+        savePanel.nameFieldStringValue = version.fileName
+        savePanel.canCreateDirectories = true
+
+        let fileURL = URL(fileURLWithPath: version.filePath)
+        if let utType = UTType(filenameExtension: fileURL.pathExtension) {
+            savePanel.allowedContentTypes = [utType]
+        }
+
+        savePanel.begin { response in
+            guard response == .OK, let destURL = savePanel.url else { return }
+            do {
+                if FileManager.default.fileExists(atPath: destURL.path) {
+                    try FileManager.default.removeItem(at: destURL)
+                }
+                try FileManager.default.copyItem(atPath: version.filePath, toPath: destURL.path)
+            } catch {
+                DispatchQueue.main.async {
+                    viewModel.errorMessage = "Failed to save version: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     private func formatDate(_ date: Date) -> String {

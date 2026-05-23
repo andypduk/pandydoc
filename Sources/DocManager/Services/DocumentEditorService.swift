@@ -4,6 +4,7 @@ import AppKit
 protocol DocumentEditorProtocol {
     func openDocument(documentId: UUID) throws -> OpenDocumentResult
     func saveChanges(documentId: UUID) throws
+    func saveWorkingCopy(documentId: UUID) throws -> Document
     func closeDocument(documentId: UUID)
     func openWithApp(documentId: UUID, appURL: URL?) throws
 }
@@ -56,7 +57,7 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
         } else {
             let response = try checkInOut.checkOut(documentId: documentId)
             guard let tempPath = response.tempFilePath,
-                  let updatedDoc = response.document else {
+                  let _ = response.document else {
                 throw DocumentError.checkoutFailed(response.error ?? "Unknown error")
             }
             fileURL = URL(fileURLWithPath: tempPath)
@@ -85,6 +86,13 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
             return
         }
         try performCheckIn(documentId: documentId, changeNotes: nil)
+    }
+    
+    func saveWorkingCopy(documentId: UUID) throws -> Document {
+        guard openDocuments[documentId] != nil else {
+            throw DocumentError.documentNotFound
+        }
+        return try checkInOut.saveWorkingCopy(documentId: documentId)
     }
     
     func closeDocument(documentId: UUID) {
@@ -120,11 +128,16 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
         let matchingDoc = openDocuments.first { $0.value.tempURL.path == path }
         guard let documentId = matchingDoc?.key else { return }
         
-        notificationCenter.post(
-            name: .documentExternallyModified,
-            object: nil,
-            userInfo: ["documentId": documentId, "filePath": path]
-        )
+        do {
+            _ = try checkInOut.saveWorkingCopy(documentId: documentId)
+            notificationCenter.post(
+                name: .documentExternallyModified,
+                object: nil,
+                userInfo: ["documentId": documentId, "filePath": path]
+            )
+        } catch {
+            print("Failed to save working copy: \(error)")
+        }
     }
     
     func fileWasDeleted(at path: String) {
@@ -143,7 +156,7 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
     private func performCheckIn(documentId: UUID, changeNotes: String?) throws {
         guard let info = openDocuments[documentId] else { return }
         
-        try checkInOut.checkIn(documentId: documentId, changeNotes: changeNotes)
+        _ = try checkInOut.checkIn(documentId: documentId, changeNotes: changeNotes)
         
         fileWatcher.stopWatching(filePath: info.tempURL.path)
         openDocuments.removeValue(forKey: documentId)
@@ -174,7 +187,7 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
     }
     
     func autoSaveCheck() {
-        for (documentId, info) in openDocuments {
+        for (_, info) in openDocuments {
             let fileURL = info.tempURL
             if FileManager.default.fileExists(atPath: fileURL.path) {
                 do {

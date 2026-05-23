@@ -3,7 +3,20 @@
 
   ],
   "copyCommands" : {
-
+    "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.swift_SQLite.bundle/PrivacyInfo.xcprivacy" : {
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/PrivacyInfo.xcprivacy"
+        }
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.swift_SQLite.bundle/PrivacyInfo.xcprivacy"
+        }
+      ]
+    }
   },
   "explicitTargetDependencyImportCheckingMode" : {
     "none" : {
@@ -36,7 +49,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Folder.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DatabaseManager.swift"
         },
         {
           "kind" : "file",
@@ -53,6 +74,10 @@
         {
           "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FileWatcher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FolderAccessManager.swift"
         },
         {
           "kind" : "file",
@@ -84,6 +109,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/FolderMoveMenu.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/PrinterSetupSheet.swift"
         },
         {
@@ -100,6 +129,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/SQLite.swiftmodule"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/sources"
         }
       ],
@@ -110,11 +143,14 @@
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocManagerApp.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Document.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentTypes.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentEditorService.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentStorage.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentWatcherService.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/AppDelegate.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentListViewModel.swift.o",
@@ -122,6 +158,7 @@
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/ContentView.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentDetailView.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocumentRowView.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/SettingsView.swift.o",
         "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/VersionHistoryView.swift.o"
@@ -185,7 +222,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/CheckInOutService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.swift.o"
         },
         {
           "kind" : "file",
@@ -202,6 +247,10 @@
         {
           "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FileWatcher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.swift.o"
         },
         {
           "kind" : "file",
@@ -233,6 +282,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PrinterSetupSheet.swift.o"
         },
         {
@@ -253,11 +306,14 @@
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/DocManagerApp.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Document.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/DocumentTypes.swift",
+        "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Folder.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift",
+        "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DatabaseManager.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentEditorService.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentStorage.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentWatcherService.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FileWatcher.swift",
+        "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FolderAccessManager.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/PDFPrinterService.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Utilities/AppDelegate.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/ViewModels/DocumentListViewModel.swift",
@@ -265,6 +321,7 @@
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/ContentView.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentDetailView.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentRowView.swift",
+        "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/FolderMoveMenu.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/PrinterSetupSheet.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/SettingsView.swift",
         "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/VersionHistoryView.swift"
@@ -355,6 +412,459 @@
         "/Users/andy/VSChrom/pandydoc/Sources/PrinterExtension/PrintExtension.swift"
       ],
       "tempsPath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.SQLite-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/sources",
+      "importPath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Backup.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Blob.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Aggregation.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Attach.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Pragmas.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Errors.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Result.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteFeature.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteVersion.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Statement.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/URIQueryParameter.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Value.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/Cipher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS4.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS5.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/RTree.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Foundation.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Helpers.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/Connection+Schema.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaChanger.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaDefinitions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaReader.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/AggregateFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Coding.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Collation.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CoreFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CustomFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/DateAndTimeFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Expression.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Operators.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query+with.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Schema.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Setter.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/WindowFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DerivedSources/resource_bundle_accessor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<SQLite-arm64-apple-macosx-debug.module-resources>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "SQLite",
+      "moduleOutputPath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/SQLite.swiftmodule",
+      "objects" : [
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Backup.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Blob.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Aggregation.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Attach.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Pragmas.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Errors.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Result.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteFeature.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteVersion.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Statement.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/URIQueryParameter.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Value.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Cipher.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS4.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS5.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/RTree.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Foundation.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Helpers.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Schema.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaChanger.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaDefinitions.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaReader.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/AggregateFunctions.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Coding.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Collation.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CoreFunctions.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CustomFunctions.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DateAndTimeFunctions.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Expression.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Operators.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query+with.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Schema.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Setter.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/WindowFunctions.swift.o",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/resource_bundle_accessor.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx10.13",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_AVAILABLE",
+        "-module-cache-path",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/include/SQLite-Swift.h",
+        "-swift-version",
+        "5",
+        "-DSystemSQLite",
+        "-I",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-L",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-plugin-path",
+        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-suppress-warnings",
+        "-user-module-version",
+        "0.16.0",
+        "-package-name",
+        "sqlite_swift"
+      ],
+      "outputFileMapPath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Backup.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Blob.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Aggregation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Attach.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Pragmas.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Errors.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Result.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteFeature.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteVersion.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Statement.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/URIQueryParameter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Value.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Cipher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS4.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS5.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/RTree.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Foundation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Helpers.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Schema.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaChanger.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaDefinitions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaReader.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/AggregateFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Coding.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Collation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CoreFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CustomFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DateAndTimeFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Expression.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Operators.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query+with.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Schema.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Setter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/WindowFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/resource_bundle_accessor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules/SQLite.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Backup.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Blob.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Aggregation.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Attach.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Pragmas.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Errors.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Result.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteFeature.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteVersion.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Statement.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/URIQueryParameter.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Value.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/Cipher.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS4.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS5.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/RTree.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Foundation.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Helpers.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/Connection+Schema.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaChanger.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaDefinitions.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaReader.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/AggregateFunctions.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Coding.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Collation.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CoreFunctions.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CustomFunctions.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/DateAndTimeFunctions.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Expression.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Operators.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query+with.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Schema.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Setter.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/WindowFunctions.swift",
+        "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DerivedSources/resource_bundle_accessor.swift"
+      ],
+      "tempsPath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build",
       "wholeModuleOptimization" : false
     },
     "C.Shared-arm64-apple-macosx-debug.module" : {
@@ -457,11 +967,14 @@
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/DocManagerApp.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Document.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/DocumentTypes.swift",
+      "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Folder.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift",
+      "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DatabaseManager.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentEditorService.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentStorage.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DocumentWatcherService.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FileWatcher.swift",
+      "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FolderAccessManager.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/PDFPrinterService.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Utilities/AppDelegate.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/ViewModels/DocumentListViewModel.swift",
@@ -469,6 +982,7 @@
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/ContentView.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentDetailView.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentRowView.swift",
+      "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/FolderMoveMenu.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/PrinterSetupSheet.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/SettingsView.swift",
       "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/VersionHistoryView.swift",
@@ -572,6 +1086,100 @@
       "-driver-use-frontend-path",
       "/Library/Developer/CommandLineTools/usr/bin/swiftc"
     ],
+    "SQLite" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "SQLite",
+      "-package-name",
+      "sqlite_swift",
+      "-c",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Backup.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Blob.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Aggregation.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Attach.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Pragmas.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Errors.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Result.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteFeature.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteVersion.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Statement.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/URIQueryParameter.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Value.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/Cipher.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS4.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS5.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/RTree.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Foundation.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Helpers.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/Connection+Schema.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaChanger.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaDefinitions.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaReader.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/AggregateFunctions.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Coding.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Collation.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CoreFunctions.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CustomFunctions.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/DateAndTimeFunctions.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Expression.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Operators.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query+with.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Schema.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Setter.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/WindowFunctions.swift",
+      "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DerivedSources/resource_bundle_accessor.swift",
+      "-I",
+      "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx10.13",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_AVAILABLE",
+      "-module-cache-path",
+      "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/include/SQLite-Swift.h",
+      "-swift-version",
+      "5",
+      "-DSystemSQLite",
+      "-I",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-L",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-plugin-path",
+      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-suppress-warnings",
+      "-user-module-version",
+      "0.16.0",
+      "-package-name",
+      "sqlite_swift",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ],
     "Shared" : [
       "/Library/Developer/CommandLineTools/usr/bin/swiftc",
       "-module-name",
@@ -629,9 +1237,12 @@
   },
   "targetDependencyMap" : {
     "DocManager" : [
-
+      "SQLite"
     ],
     "PrinterExtension" : [
+
+    ],
+    "SQLite" : [
 
     ],
     "Shared" : [
@@ -671,7 +1282,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Models/Folder.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/CheckInOutService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/DatabaseManager.swift"
         },
         {
           "kind" : "file",
@@ -688,6 +1307,10 @@
         {
           "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FileWatcher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Services/FolderAccessManager.swift"
         },
         {
           "kind" : "file",
@@ -716,6 +1339,10 @@
         {
           "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/DocumentRowView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/Sources/DocManager/Views/FolderMoveMenu.swift"
         },
         {
           "kind" : "file",
@@ -771,6 +1398,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DatabaseManager.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/DocManagerApp.swift.o"
         },
         {
@@ -811,6 +1442,18 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/Folder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderAccessManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/FolderMoveMenu.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/PDFPrinterService.swift.o"
         },
         {
@@ -824,6 +1467,154 @@
         {
           "kind" : "file",
           "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/DocManager.build/VersionHistoryView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/AggregateFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Backup.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Blob.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Cipher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Coding.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Collation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Aggregation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Attach.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Pragmas.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Schema.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CoreFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CustomFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DateAndTimeFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Errors.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Expression.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS4.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS5.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Foundation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Helpers.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Operators.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query+with.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/RTree.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Result.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteFeature.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteVersion.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Schema.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaChanger.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaDefinitions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaReader.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Setter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Statement.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/URIQueryParameter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Value.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/WindowFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/resource_bundle_accessor.swift.o"
         }
       ],
       "outputFilePath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PandyDoc.product/Objects.LinkFileList"
@@ -841,6 +1632,322 @@
         }
       ],
       "outputFilePath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/PrinterExtension.build/sources"
+    },
+    "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite-Dynamic.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/AggregateFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Backup.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Blob.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Cipher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Coding.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Collation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Aggregation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Attach.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Pragmas.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection+Schema.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Connection.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CoreFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/CustomFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DateAndTimeFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Errors.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Expression.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS4.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/FTS5.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Foundation.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Helpers.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Operators.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query+with.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Query.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/RTree.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Result.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteFeature.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SQLiteVersion.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Schema.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaChanger.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaDefinitions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/SchemaReader.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Setter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Statement.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/URIQueryParameter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/Value.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/WindowFunctions.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/resource_bundle_accessor.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite-Dynamic.product/Objects.LinkFileList"
+    },
+    "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Backup.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Blob.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Aggregation.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Attach.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection+Pragmas.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Connection.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Errors.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Result.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteFeature.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/SQLiteVersion.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Statement.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/URIQueryParameter.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Core/Value.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/Cipher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS4.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/FTS5.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Extensions/RTree.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Foundation.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Helpers.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/Connection+Schema.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaChanger.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaDefinitions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Schema/SchemaReader.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/AggregateFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Coding.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Collation.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CoreFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/CustomFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/DateAndTimeFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Expression.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Operators.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query+with.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Query.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Schema.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/Setter.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/checkouts/SQLite.swift/Sources/SQLite/Typed/WindowFunctions.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/DerivedSources/resource_bundle_accessor.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/SQLite.build/sources"
     },
     "/Users/andy/VSChrom/pandydoc/.build/arm64-apple-macosx/debug/Shared.build/sources" : {
       "alwaysOutOfDate" : false,

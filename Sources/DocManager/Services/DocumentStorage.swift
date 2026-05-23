@@ -1,4 +1,5 @@
 import Foundation
+import SQLite
 import CommonCrypto
 
 protocol DocumentStorageProtocol {
@@ -16,124 +17,93 @@ protocol DocumentStorageProtocol {
     func restoreVersion(documentId: UUID, versionNumber: Int) throws -> String
     
     func storeReceivedPDF(sourcePath: String, fileName: String) throws -> Document
+    
+    func getFolders(parentID: UUID?) throws -> [Folder]
+    func getAllFolders() -> [Folder]
+    func createFolder(name: String, parentID: UUID?) throws -> Folder
+    func deleteFolder(id: UUID) throws
+    func updateFolder(_ folder: Folder) throws
+    func toggleFolderProtection(id: UUID) throws
+    func toggleDocumentProtection(id: UUID) throws
+    func getAllDocumentsRecursive() -> [Document]
+    func getCheckedOutByUser(username: String) -> [Document]
+    func getDocumentsInFolder(folderID: UUID) throws -> [Document]
+    func moveDocument(documentID: UUID, to folderID: UUID?) throws
+    func isSystemFolder(id: UUID) -> Bool
 }
 
 final class DocumentStorage: DocumentStorageProtocol {
     static let shared = DocumentStorage()
     
     private let fileManager = FileManager.default
-    private var storageURL: URL
+    private var db: DatabaseManager
     private var documentsURL: URL
     private var versionsURL: URL
-    private var metadataURL: URL
-    private var documentsCache: [UUID: Document] = [:]
-    private let queue = DispatchQueue(label: "com.pandydoc.storage", attributes: .concurrent)
     
-    private init() {
-        let fallbackDir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("PandyDoc", isDirectory: true)
+    private init(db: DatabaseManager = DatabaseManager.shared) {
+        self.db = db
         
-        do {
-            let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            storageURL = appSupport.appendingPathComponent("PandyDoc", isDirectory: true)
-            try fileManager.createDirectory(at: storageURL, withIntermediateDirectories: true)
-        } catch {
-            print("Cannot access Application Support, using fallback: \(fallbackDir.path)")
-            storageURL = fallbackDir
-        }
+        documentsURL = db.storageURL.appendingPathComponent("Documents", isDirectory: true)
+        versionsURL = db.storageURL.appendingPathComponent("Versions", isDirectory: true)
         
-        documentsURL = storageURL.appendingPathComponent("Documents", isDirectory: true)
-        versionsURL = storageURL.appendingPathComponent("Versions", isDirectory: true)
-        metadataURL = storageURL.appendingPathComponent("metadata.json", isDirectory: false)
+        print("PandyDoc storage: \(db.storageURL.path)")
     }
     
     func initializeStorage() throws {
+        try db.connect()
         try createDirectoryIfNeeded(documentsURL)
         try createDirectoryIfNeeded(versionsURL)
-        try loadMetadata()
     }
     
     func saveDocument(_ document: Document) throws {
-        let destURL = documentsURL.appendingPathComponent("\(document.id.uuidString).\(document.fileExtension)")
+        let conn = try db.getConnection()
         
-        try queue.sync(flags: .barrier) {
-            var caughtError: Error?
-            
-            if !self.fileManager.fileExists(atPath: destURL.path) {
-                do {
-                    try self.fileManager.copyItem(atPath: document.filePath, toPath: destURL.path)
-                } catch {
-                    caughtError = error
-                }
-            }
-            
-            if caughtError == nil {
-                var doc = document
-                doc.filePath = destURL.path
-                self.documentsCache[doc.id] = doc
-                do {
-                    try self.saveMetadata()
-                } catch {
-                    caughtError = error
-                }
-            }
-            
-            if let caughtError {
-                throw caughtError
-            }
+        let destURL = documentsURL.appendingPathComponent("\(document.id.uuidString).\(document.fileExtension)")
+        if !fileManager.fileExists(atPath: destURL.path) {
+            try fileManager.copyItem(atPath: document.filePath, toPath: destURL.path)
         }
+        
+        var doc = document
+        doc.filePath = destURL.path
+        try db.insertDocument(db: conn, document: doc)
     }
     
     func getDocument(id: UUID) -> Document? {
-        queue.sync {
-            documentsCache[id]
-        }
+        guard let conn = try? db.getConnection() else { return nil }
+        return try? db.getDocument(db: conn, id: id)
     }
     
     func getAllDocuments() -> [Document] {
-        queue.sync {
-            Array(documentsCache.values).sorted { $0.updatedAt > $1.updatedAt }
-        }
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getAllDocuments(db: conn)) ?? []
     }
     
     func searchDocuments(query: String, tags: [String]) -> [Document] {
-        queue.sync {
-            documentsCache.values.filter { doc in
-                let matchesQuery = query.isEmpty ||
-                    doc.name.localizedCaseInsensitiveContains(query) ||
-                    doc.fileName.localizedCaseInsensitiveContains(query) ||
-                    doc.tags.contains { $0.localizedCaseInsensitiveContains(query) }
-                
-                let matchesTags = tags.isEmpty || tags.allSatisfy { doc.tags.contains($0) }
-                
-                return matchesQuery && matchesTags
-            }
-            .sorted { $0.updatedAt > $1.updatedAt }
-        }
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.searchDocuments(db: conn, query: query, tags: tags)) ?? []
     }
     
     func deleteDocument(id: UUID) throws {
-        try queue.sync(flags: .barrier) {
-            guard let doc = self.documentsCache[id] else { return }
-            
-            try? self.fileManager.removeItem(atPath: doc.filePath)
-            let docVersionsURL = self.versionsURL.appendingPathComponent(doc.id.uuidString, isDirectory: true)
-            try? self.fileManager.removeItem(atPath: docVersionsURL.path)
-            
-            self.documentsCache.removeValue(forKey: id)
-            try? self.saveMetadata()
+        let conn = try db.getConnection()
+        
+        if let doc = getDocument(id: id) {
+            try? fileManager.removeItem(atPath: doc.filePath)
+            let docVersionsURL = versionsURL.appendingPathComponent(doc.id.uuidString, isDirectory: true)
+            try? fileManager.removeItem(atPath: docVersionsURL.path)
         }
+        
+        try db.deleteDocument(db: conn, id: id)
     }
     
     func updateDocument(_ document: Document) throws {
-        queue.sync(flags: .barrier) {
-            self.documentsCache[document.id] = document
-            try? self.saveMetadata()
-        }
+        let conn = try db.getConnection()
+        try db.updateDocument(db: conn, document: document)
     }
     
     func createVersion(documentId: UUID, sourcePath: String, changeNotes: String?) throws -> DocumentVersion {
-        guard let doc = documentsCache[documentId] else {
+        let conn = try db.getConnection()
+        
+        guard let doc = try db.getDocument(db: conn, id: documentId) else {
             throw DocumentError.documentNotFound
         }
         
@@ -144,6 +114,9 @@ final class DocumentStorage: DocumentStorageProtocol {
         let versionFileName = "v\(versionNumber)_\(doc.fileName)"
         let versionURL = versionDir.appendingPathComponent(versionFileName)
         
+        if fileManager.fileExists(atPath: versionURL.path) {
+            try fileManager.removeItem(atPath: versionURL.path)
+        }
         try fileManager.copyItem(atPath: sourcePath, toPath: versionURL.path)
         let attributes = try fileManager.attributesOfItem(atPath: versionURL.path)
         let fileSize = attributes[.size] as? Int64 ?? 0
@@ -162,72 +135,59 @@ final class DocumentStorage: DocumentStorageProtocol {
             changeNotes: changeNotes
         )
         
-        var updatedDoc = doc
-        updatedDoc.currentVersion = versionNumber
-        updatedDoc.filePath = versionURL.path
-        updatedDoc.updatedAt = Date()
-        documentsCache[documentId] = updatedDoc
+        try conn.transaction {
+            try db.insertVersion(db: conn, version: version)
+            
+            var updatedDoc = doc
+            updatedDoc.currentVersion = versionNumber
+            updatedDoc.updatedAt = Date()
+            try db.updateDocument(db: conn, document: updatedDoc)
+        }
         
-        try saveMetadata()
         return version
     }
     
     func getVersions(documentId: UUID) -> [DocumentVersion] {
-        let versionDir = versionsURL.appendingPathComponent(documentId.uuidString, isDirectory: true)
-        guard fileManager.fileExists(atPath: versionDir.path) else { return [] }
-        
-        do {
-            let files = try fileManager.contentsOfDirectory(atPath: versionDir.path)
-            return files.compactMap { fileName -> DocumentVersion? in
-                let filePath = versionDir.appendingPathComponent(fileName).path
-                let attributes = try? fileManager.attributesOfItem(atPath: filePath)
-                return DocumentVersion(
-                    id: UUID(),
-                    documentId: documentId,
-                    versionNumber: extractVersionNumber(from: fileName),
-                    fileName: fileName,
-                    filePath: filePath,
-                    fileSize: attributes?[.size] as? Int64 ?? 0,
-                    createdBy: NSFullUserName(),
-                    createdAt: attributes?[.creationDate] as? Date ?? Date(),
-                    checksum: "",
-                    changeNotes: nil
-                )
-            }.sorted { $0.versionNumber > $1.versionNumber }
-        } catch {
-            return []
-        }
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getVersions(db: conn, documentId: documentId)) ?? []
     }
     
     func getVersion(documentId: UUID, versionNumber: Int) -> DocumentVersion? {
-        getVersions(documentId: documentId).first { $0.versionNumber == versionNumber }
+        guard let conn = try? db.getConnection() else { return nil }
+        return try? db.getVersion(db: conn, documentId: documentId, versionNum: versionNumber)
     }
     
     func restoreVersion(documentId: UUID, versionNumber: Int) throws -> String {
-        guard let version = getVersion(documentId: documentId, versionNumber: versionNumber) else {
+        let conn = try db.getConnection()
+        
+        guard let version = try db.getVersion(db: conn, documentId: documentId, versionNum: versionNumber) else {
             throw DocumentError.versionNotFound
         }
-        
-        let docDir = documentsURL.appendingPathComponent(documentId.uuidString, isDirectory: true)
-        try createDirectoryIfNeeded(docDir)
-        
-        let restoredPath = docDir.appendingPathComponent("v\(versionNumber)_\(version.fileName)").path
-        try fileManager.copyItem(atPath: version.filePath, toPath: restoredPath)
-        
-        if let doc = documentsCache[documentId] {
-            var updatedDoc = doc
-            updatedDoc.currentVersion = versionNumber
-            updatedDoc.filePath = restoredPath
-            updatedDoc.fileSize = version.fileSize
-            updatedDoc.updatedAt = Date()
-            documentsCache[documentId] = updatedDoc
-            try saveMetadata()
+
+        guard let doc = try db.getDocument(db: conn, id: documentId) else {
+            throw DocumentError.documentNotFound
         }
-        
-        return restoredPath
+
+        let destURL = URL(fileURLWithPath: doc.filePath)
+        if fileManager.fileExists(atPath: destURL.path) {
+            try fileManager.removeItem(at: destURL)
+        }
+        try fileManager.copyItem(atPath: version.filePath, toPath: destURL.path)
+
+        let attributes = try fileManager.attributesOfItem(atPath: destURL.path)
+
+        var updatedDoc = doc
+        updatedDoc.currentVersion = versionNumber
+        updatedDoc.fileSize = attributes[.size] as? Int64 ?? version.fileSize
+        updatedDoc.updatedAt = Date()
+        try db.updateDocument(db: conn, document: updatedDoc)
+
+        return destURL.path
     }
     
     func storeReceivedPDF(sourcePath: String, fileName: String) throws -> Document {
+        let conn = try db.getConnection()
+        
         let docName = (fileName as NSString).deletingPathExtension
         let sanitizedFileName = sanitizeFileName(fileName)
         
@@ -247,10 +207,7 @@ final class DocumentStorage: DocumentStorageProtocol {
         savedDoc.fileSize = attributes[.size] as? Int64 ?? 0
         savedDoc.documentType = .pdf
         
-        queue.sync(flags: .barrier) {
-            self.documentsCache[savedDoc.id] = savedDoc
-            try? self.saveMetadata()
-        }
+        try db.insertDocument(db: conn, document: savedDoc)
         
         _ = try createVersion(
             documentId: savedDoc.id,
@@ -267,22 +224,6 @@ final class DocumentStorage: DocumentStorageProtocol {
         }
     }
     
-    private func loadMetadata() throws {
-        guard fileManager.fileExists(atPath: metadataURL.path) else { return }
-        let data = try Data(contentsOf: metadataURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        documentsCache = try decoder.decode([UUID: Document].self, from: data)
-    }
-    
-    private func saveMetadata() throws {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let data = try encoder.encode(documentsCache)
-        try data.write(to: metadataURL)
-    }
-    
     private func generateChecksum(_ path: String) throws -> String {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
@@ -292,17 +233,71 @@ final class DocumentStorage: DocumentStorageProtocol {
         return digest.map { String(format: "%02x", $0) }.joined()
     }
     
-    private func extractVersionNumber(from fileName: String) -> Int {
-        let regex = try? NSRegularExpression(pattern: "^v(\\d+)_")
-        guard let match = regex?.firstMatch(in: fileName, range: NSRange(fileName.startIndex..., in: fileName)) else {
-            return 0
-        }
-        guard let range = Range(match.range(at: 1), in: fileName) else { return 0 }
-        return Int(fileName[range]) ?? 0
-    }
-    
     private func sanitizeFileName(_ name: String) -> String {
         let invalidChars = CharacterSet(charactersIn: "/\\?*<|:\"'")
         return name.components(separatedBy: invalidChars).joined()
+    }
+
+    // MARK: - Folders
+
+    func getFolders(parentID: UUID?) throws -> [Folder] {
+        let conn = try db.getConnection()
+        return try db.getFolders(db: conn, parentID: parentID)
+    }
+
+    func getAllFolders() -> [Folder] {
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getAllFolders(db: conn)) ?? []
+    }
+
+    func createFolder(name: String, parentID: UUID?) throws -> Folder {
+        let conn = try db.getConnection()
+        let folder = Folder(name: name, parentID: parentID)
+        try db.insertFolder(db: conn, folder: folder)
+        return folder
+    }
+
+    func deleteFolder(id: UUID) throws {
+        let conn = try db.getConnection()
+        try db.deleteFolder(db: conn, id: id)
+    }
+
+    func updateFolder(_ folder: Folder) throws {
+        let conn = try db.getConnection()
+        try db.updateFolder(db: conn, folder: folder)
+    }
+
+    func toggleFolderProtection(id: UUID) throws {
+        let conn = try db.getConnection()
+        try db.toggleFolderProtection(db: conn, id: id)
+    }
+
+    func toggleDocumentProtection(id: UUID) throws {
+        let conn = try db.getConnection()
+        try db.toggleDocumentProtection(db: conn, id: id)
+    }
+
+    func isSystemFolder(id: UUID) -> Bool {
+        return false
+    }
+
+    func getDocumentsInFolder(folderID: UUID) throws -> [Document] {
+        let conn = try db.getConnection()
+        return try db.getDocumentsInFolder(db: conn, folderID: folderID)
+    }
+
+    func getAllDocumentsRecursive() -> [Document] {
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getAllDocumentsRecursive(db: conn)) ?? []
+    }
+
+    func getCheckedOutByUser(username: String) -> [Document] {
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getCheckedOutByUser(db: conn, username: username)) ?? []
+    }
+
+    func moveDocument(documentID: UUID, to folderID: UUID?) throws {
+        let conn = try db.getConnection()
+        try db.moveDocument(db: conn, documentID: documentID, to: folderID)
     }
 }

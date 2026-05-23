@@ -12,11 +12,15 @@ let package = Package(
             targets: ["DocManager"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.15.0")
+    ],
     targets: [
         .executableTarget(
             name: "DocManager",
-            dependencies: [],
+            dependencies: [
+                .product(name: "SQLite", package: "SQLite.swift")
+            ],
             path: "Sources/DocManager",
             resources: [
                 .process("../../Resources")
