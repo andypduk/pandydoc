@@ -172,12 +172,14 @@ struct DocumentRowView: View {
         }
 
         Button(action: { viewModel.exportDocument(document) }) {
-            Label("Export...", systemImage: "square.and.arrow.up")
+            Label(document.isLocked && viewModel.isShowingTemplates ? "Export (Locked)" : "Export...", systemImage: "square.and.arrow.up")
         }
+        .disabled(document.isLocked && viewModel.isShowingTemplates)
 
         Button(action: { viewModel.openDocument(document: document) }) {
-            Label("Open", systemImage: "arrow.up.right.square")
+            Label(document.isLocked ? "Open (Locked)" : "Open", systemImage: "arrow.up.right.square")
         }
+        .disabled(document.isLocked)
         
         Button(action: { viewModel.showVersions(for: document) }) {
             Label("Version History", systemImage: "clock.arrow.circlepath")
@@ -204,7 +206,8 @@ struct DocumentRowView: View {
         Divider()
         
         Button(role: .destructive, action: { viewModel.deleteDocument(document: document) }) {
-            Label("Delete", systemImage: "trash")
+            Label(document.isLocked && viewModel.isShowingTemplates ? "Delete (Locked)" : "Delete", systemImage: "trash")
         }
+        .disabled(document.isLocked && viewModel.isShowingTemplates)
     }
 }
