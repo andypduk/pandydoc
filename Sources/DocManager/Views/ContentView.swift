@@ -1523,8 +1523,6 @@ extension Image {
             self.init(systemName: "pawprint.fill")
             return
         }
-        let rep = NSBitmapImageRep(data: image.tiffRepresentation!)!
-        let cgImage = rep.cgImage!
-        self.init(nsImage: NSImage(cgImage: cgImage, size: image.size))
+        self.init(nsImage: image)
     }
 }
