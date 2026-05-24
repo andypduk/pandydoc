@@ -233,10 +233,8 @@ struct ContentView: View {
                     isSelected: viewModel.isShowingAllDocuments,
                     onDrop: { handleDropToFolder(providers: $0, targetFolderID: nil) })
                 
-                if viewModel.isShowingAllDocuments {
-                    sidebarItem(icon: "doc.on.doc.fill", label: "Templates", tag: SidebarItem.templates,
-                        isSelected: viewModel.isShowingTemplates)
-                }
+                sidebarItem(icon: "doc.on.doc.fill", label: "Templates", tag: SidebarItem.templates,
+                    isSelected: viewModel.isShowingTemplates)
             }
 
             Section {
