@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PandyDoc Test Dashboard</title>
+<style>
+:root { --bg:#fff; --bg2:#f5f5f5; --text:#1a1a1a; --border:#e0e0e0; --green:#49cc90; --red:#f93e3e; --blue:#4a90d9; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1a1a1a; --bg2:#2a2a2a; --text:#e0e0e0; --border:#444; } }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); padding:20px; max-width:1200px; margin:0 auto; }
+h1 { margin-bottom:20px; }
+.header { display:flex; gap:10px; margin-bottom:20px; align-items:center; }
+.header input { padding:8px 12px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--text); flex:1; max-width:400px; }
+.header button { padding:8px 16px; background:var(--blue); color:#fff; border:none; border-radius:4px; cursor:pointer; }
+.header button:hover { opacity:0.9; }
+.progress { height:6px; background:var(--bg2); border-radius:3px; margin-bottom:20px; overflow:hidden; }
+.progress-bar { height:100%; background:var(--blue); width:0%; transition:width 0.3s; }
+.controls { display:flex; gap:10px; margin-bottom:20px; }
+.controls button { padding:8px 16px; background:var(--blue); color:#fff; border:none; border-radius:4px; cursor:pointer; }
+.controls button.secondary { background:var(--bg2); color:var(--text); border:1px solid var(--border); }
+.category { border:1px solid var(--border); border-radius:6px; margin-bottom:10px; overflow:hidden; }
+.category-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--bg2); cursor:pointer; user-select:none; }
+.category-header:hover { opacity:0.9; }
+.category-header h3 { font-size:14px; }
+.category-header .badge { font-size:12px; padding:2px 8px; border-radius:10px; background:var(--border); }
+.category-header .badge.pass { background:var(--green); color:#fff; }
+.category-header .badge.fail { background:var(--red); color:#fff; }
+.tests { padding:10px 16px; }
+.test { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.test:last-child { border-bottom:none; }
+.test .status { width:20px; text-align:center; }
+.test .status.pending { color:#999; }
+.test .status.running { animation:spin 1s linear infinite; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.test .name { flex:1; font-size:13px; }
+.test .method { font-size:11px; padding:2px 6px; border-radius:3px; color:#fff; }
+.test .method.get { background:#61affe; } .test .method.post { background:#49cc90; }
+.test .method.put { background:#fca130; } .test .method.delete { background:#f93e3e; }
+.test .path { font-family:monospace; font-size:12px; color:var(--text); }
+.test .code { font-size:12px; min-width:40px; }
+.test .code.success { color:var(--green); } .test .code.error { color:var(--red); }
+.response-inspector { margin-top:10px; padding:10px; background:var(--bg2); border-radius:4px; font-family:monospace; font-size:12px; max-height:200px; overflow-y:auto; white-space:pre-wrap; display:none; }
+.response-inspector.visible { display:block; }
+.export-btn { margin-top:20px; padding:8px 16px; background:var(--bg2); color:var(--text); border:1px solid var(--border); border-radius:4px; cursor:pointer; }
+</style>
+</head>
+<body>
+<h1>PandyDoc Test Dashboard</h1>
+<div class="header">
+  <input type="text" id="apiKey" placeholder="Enter API key" value="">
+  <button onclick="connect()">Connect</button>
+  <span id="connectionStatus" style="font-size:13px;color:#999;">Not connected</span>
+</div>
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="controls">
+  <button onclick="runAll()">Run All</button>
+  <button class="secondary" onclick="exportResults()">Export Results</button>
+</div>
+<div id="categories"></div>
+<button class="export-btn" onclick="exportResults()">Export Results as JSON</button>
+<script>
+const BASE = window.location.origin + '/api/v1';
+let results = [];
+const categories = [
+  { name:'Health', tests:[
+    { name:'Health check', method:'GET', path:'/health' }
+  ]},
+  { name:'Documents', tests:[
+    { name:'List documents', method:'GET', path:'/documents' },
+    { name:'Create document', method:'POST', path:'/documents', body:{name:'Test Doc',content:'Test content'} },
+  ]},
+  { name:'Check-In/Out', tests:[
+    { name:'Check out document', method:'POST', path:'/documents/{id}/check-out', body:{reason:'Testing'} },
+    { name:'Check in document', method:'POST', path:'/documents/{id}/check-in', body:{reason:'Testing'} },
+  ]},
+  { name:'Versions', tests:[
+    { name:'List versions', method:'GET', path:'/documents/{id}/versions' },
+    { name:'Get version', method:'GET', path:'/documents/{id}/versions/1' },
+  ]},
+  { name:'Folders', tests:[
+    { name:'List folders', method:'GET', path:'/folders' },
+    { name:'Create folder', method:'POST', path:'/folders', body:{name:'Test Folder'} },
+  ]},
+  { name:'Templates', tests:[
+    { name:'List templates', method:'GET', path:'/templates' },
+    { name:'Create template', method:'POST', path:'/templates', body:{name:'Test Template',content:'Test content'} },
+  ]},
+  { name:'Search', tests:[
+    { name:'Search documents', method:'GET', path:'/search?q=test' },
+  ]},
+  { name:'System', tests:[
+    { name:'Get settings', method:'GET', path:'/settings' },
+  ]}
+];
+let docId = null;
+function renderCategories() {
+  const container = document.getElementById('categories');
+  container.innerHTML = categories.map((cat, ci) => `
+    <div class="category">
+      <div class="category-header" onclick="toggleCategory(${ci})">
+        <h3>${cat.name}</h3>
+        <button class="secondary" style="padding:4px 8px;font-size:12px;margin-right:10px" onclick="event.stopPropagation();runCategory(${ci})">Run</button>
+        <span class="badge" id="badge-${ci}">${cat.tests.length} tests</span>
+      </div>
+      <div class="tests" id="tests-${ci}">
+        ${cat.tests.map((t, ti) => `
+          <div class="test" id="test-${ci}-${ti}">
+            <span class="status pending" id="status-${ci}-${ti}">&#9675;</span>
+            <span class="method ${t.method.toLowerCase()}">${t.method}</span>
+            <span class="path">${t.path}</span>
+            <span class="name">${t.name}</span>
+            <span class="code" id="code-${ci}-${ti}"></span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+function toggleCategory(ci) { document.getElementById(`tests-${ci}`).style.display = document.getElementById(`tests-${ci}`).style.display === 'none' ? 'block' : 'none'; }
+async function connect() {
+  const key = document.getElementById('apiKey').value;
+  if (!key) return alert('Enter API key');
+  localStorage.setItem('pandydoc_api_key', key);
+  try {
+    const r = await fetch(BASE + '/health', { headers:{'X-API-Key':key} });
+    document.getElementById('connectionStatus').textContent = r.ok ? 'Connected' : 'Failed';
+    document.getElementById('connectionStatus').style.color = r.ok ? 'var(--green)' : 'var(--red)';
+  } catch(e) { document.getElementById('connectionStatus').textContent = 'Error: ' + e.message; }
+}
+async function runTest(ci, ti) {
+  const key = document.getElementById('apiKey').value || localStorage.getItem('pandydoc_api_key');
+  if (!key) return alert('Connect first');
+  const test = categories[ci].tests[ti];
+  const statusEl = document.getElementById(`status-${ci}-${ti}`);
+  const codeEl = document.getElementById(`code-${ci}-${ti}`);
+  statusEl.className = 'status running'; statusEl.textContent = '&#8987;';
+  codeEl.textContent = '';
+  let path = test.path.replace('{id}', docId || '00000000-0000-0000-0000-000000000000');
+  if (path.includes('?')) path = path;
+  const url = BASE + path;
+  const opts = { method:test.method, headers:{'X-API-Key':key} };
+  if (test.body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(test.body); }
+  try {
+    const r = await fetch(url, opts);
+    const text = await r.text();
+    let json; try { json = JSON.parse(text); } catch { json = text; }
+    codeEl.textContent = r.status;
+    codeEl.className = 'code ' + (r.ok ? 'success' : 'error');
+    statusEl.className = 'status'; statusEl.textContent = r.ok ? '&#9989;' : '&#10060;';
+    results.push({ category:categories[ci].name, test:test.name, method:test.method, path:test.path, status:r.status, ok:r.ok, response:json, timestamp:new Date().toISOString() });
+    if (r.ok && test.method === 'POST' && test.path === '/documents' && json?.id) docId = json.id;
+    const badge = document.getElementById(`badge-${ci}`);
+    const passed = results.filter(r => r.category === categories[ci].name && r.ok).length;
+    const total = categories[ci].tests.length;
+    badge.textContent = `${passed}/${total}`;
+    badge.className = 'badge ' + (passed === total ? 'pass' : 'fail');
+    updateProgress();
+  } catch(e) {
+    statusEl.className = 'status'; statusEl.textContent = '&#10060;';
+    codeEl.textContent = 'ERR'; codeEl.className = 'code error';
+    results.push({ category:categories[ci].name, test:test.name, method:test.method, path:test.path, status:0, ok:false, response:e.message, timestamp:new Date().toISOString() });
+    updateProgress();
+  }
+}
+async function runCategory(ci) {
+  for (let ti = 0; ti < categories[ci].tests.length; ti++) { await runTest(ci, ti); }
+}
+async function runAll() {
+  results = []; docId = null;
+  for (let ci = 0; ci < categories.length; ci++) { await runCategory(ci); }
+}
+function updateProgress() {
+  const total = categories.reduce((s, c) => s + c.tests.length, 0);
+  const done = results.length;
+  document.getElementById('progressBar').style.width = `${(done/total)*100}%`;
+}
+function exportResults() {
+  const blob = new Blob([JSON.stringify(results, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `pandydoc-test-results-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+renderCategories();
+</script>
+</body>
+</html>

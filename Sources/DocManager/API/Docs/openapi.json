@@ -1,0 +1,682 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PandyDoc API",
+    "version": "1.0.0",
+    "description": "Document management API for PandyDoc"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080/api/v1",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "get": {
+        "summary": "List documents",
+        "operationId": "listDocuments",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "maximum": 100 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["name", "created_at", "updated_at"], "default": "updated_at" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } },
+          { "name": "folder_id", "in": "query", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of documents",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedDocumentResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create document",
+        "operationId": "createDocument",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateDocumentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}": {
+      "get": {
+        "summary": "Get document by ID",
+        "operationId": "getDocument",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          },
+          "404": { "description": "Document not found" }
+        }
+      },
+      "put": {
+        "summary": "Update document",
+        "operationId": "updateDocument",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateDocumentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete document",
+        "operationId": "deleteDocument",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Document deleted" },
+          "404": { "description": "Document not found" }
+        }
+      }
+    },
+    "/documents/{id}/check-in": {
+      "post": {
+        "summary": "Check in document",
+        "operationId": "checkInDocument",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CheckInOutRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document checked in",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/check-out": {
+      "post": {
+        "summary": "Check out document",
+        "operationId": "checkOutDocument",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CheckInOutRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document checked out",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/versions": {
+      "get": {
+        "summary": "List document versions",
+        "operationId": "listVersions",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/APIVersion" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/versions/{version}": {
+      "get": {
+        "summary": "Get specific version",
+        "operationId": "getVersion",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "version", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIVersion" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/restore/{version}": {
+      "post": {
+        "summary": "Restore document to version",
+        "operationId": "restoreVersion",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "version", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document restored",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/folders": {
+      "get": {
+        "summary": "List folders",
+        "operationId": "listFolders",
+        "responses": {
+          "200": {
+            "description": "List of folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/APIFolder" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create folder",
+        "operationId": "createFolder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Folder created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIFolder" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/folders/{id}": {
+      "get": {
+        "summary": "Get folder by ID",
+        "operationId": "getFolder",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Folder details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIFolder" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update folder",
+        "operationId": "updateFolder",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Folder updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APIFolder" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete folder",
+        "operationId": "deleteFolder",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Folder deleted" },
+          "404": { "description": "Folder not found" }
+        }
+      }
+    },
+    "/templates": {
+      "get": {
+        "summary": "List templates",
+        "operationId": "listTemplates",
+        "responses": {
+          "200": {
+            "description": "List of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/APITemplate" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create template",
+        "operationId": "createTemplate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateTemplateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Template created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APITemplate" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/templates/{id}": {
+      "get": {
+        "summary": "Get template by ID",
+        "operationId": "getTemplate",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APITemplate" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update template",
+        "operationId": "updateTemplate",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateTemplateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Template updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APITemplate" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete template",
+        "operationId": "deleteTemplate",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Template deleted" },
+          "404": { "description": "Template not found" }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "summary": "Search documents",
+        "operationId": "searchDocuments",
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "folder_id", "in": "query", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedDocumentResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get API settings",
+        "operationId": "getSettings",
+        "responses": {
+          "200": {
+            "description": "Current settings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APISettings" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update settings",
+        "operationId": "updateSettings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateSettingsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/APISettings" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "version": { "type": "string", "example": "1.0.0" },
+          "uptime": { "type": "number", "example": 123.45 }
+        }
+      },
+      "APIDocument": {
+        "type": "object",
+        "required": ["id", "name", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "content": { "type": "string" },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "version": { "type": "integer" },
+          "checked_out": { "type": "boolean" },
+          "checked_out_by": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "APIFolder": {
+        "type": "object",
+        "required": ["id", "name", "created_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "parent_id": { "type": "string", "format": "uuid", "nullable": true },
+          "document_count": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "APIVersion": {
+        "type": "object",
+        "required": ["version", "content", "created_at"],
+        "properties": {
+          "version": { "type": "integer" },
+          "document_id": { "type": "string", "format": "uuid" },
+          "content": { "type": "string" },
+          "change_summary": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "APITemplate": {
+        "type": "object",
+        "required": ["id", "name", "content", "created_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "content": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "APISettings": {
+        "type": "object",
+        "properties": {
+          "api_key": { "type": "string" },
+          "port": { "type": "integer" },
+          "max_versions": { "type": "integer" },
+          "auto_check_in": { "type": "boolean" }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": {} },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "has_more": { "type": "boolean" }
+        }
+      },
+      "PaginatedDocumentResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/APIDocument" }
+              }
+            }
+          }
+        ]
+      },
+      "APIError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      },
+      "CreateDocumentRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "content": { "type": "string" },
+          "folder_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "UpdateDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "content": { "type": "string" },
+          "folder_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "CheckInOutRequest": {
+        "type": "object",
+        "properties": {
+          "reason": { "type": "string" }
+        }
+      },
+      "CreateFolderRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "parent_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "UpdateFolderRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "parent_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "CreateTemplateRequest": {
+        "type": "object",
+        "required": ["name", "content"],
+        "properties": {
+          "name": { "type": "string" },
+          "content": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "UpdateTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "content": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "UpdateSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "api_key": { "type": "string" },
+          "port": { "type": "integer" },
+          "max_versions": { "type": "integer" },
+          "auto_check_in": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

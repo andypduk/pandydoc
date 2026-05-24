@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PandyDoc API Documentation</title>
+<style>
+:root {
+  --bg: #fff; --bg-secondary: #f5f5f5; --text: #1a1a1a; --text-secondary: #666;
+  --border: #e0e0e0; --sidebar-bg: #fafafa; --code-bg: #f5f5f5;
+  --get: #61affe; --post: #49cc90; --put: #fca130; --delete: #f93e3e;
+  --accent: #4a90d9; --accent-hover: #357abd;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a1a; --bg-secondary: #2a2a2a; --text: #e0e0e0; --text-secondary: #999;
+    --border: #444; --sidebar-bg: #222; --code-bg: #2a2a2a;
+    --accent: #5ba0e9; --accent-hover: #4a90d9;
+  }
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; }
+.sidebar { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+.sidebar h1 { padding: 20px; font-size: 18px; border-bottom: 1px solid var(--border); }
+.sidebar h2 { padding: 12px 20px 6px; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px; }
+.sidebar a { display: block; padding: 6px 20px 6px 30px; color: var(--text); text-decoration: none; font-size: 13px; cursor: pointer; }
+.sidebar a:hover { background: var(--bg-secondary); }
+.main { flex: 1; overflow-y: auto; padding: 30px; }
+.endpoint { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.endpoint-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.method { padding: 4px 10px; border-radius: 4px; color: #fff; font-weight: 600; font-size: 12px; min-width: 60px; text-align: center; }
+.method.get { background: var(--get); } .method.post { background: var(--post); }
+.method.put { background: var(--put); } .method.delete { background: var(--delete); }
+.path { font-family: monospace; font-size: 14px; }
+.description { color: var(--text-secondary); font-size: 14px; margin-bottom: 15px; }
+.collapsible { cursor: pointer; user-select: none; }
+.collapsible::before { content: '▶'; display: inline-block; margin-right: 6px; font-size: 10px; transition: transform 0.2s; }
+.collapsible.open::before { transform: rotate(90deg); }
+.collapsible-content { display: none; margin-top: 10px; }
+.collapsible.open + .collapsible-content { display: block; }
+pre { background: var(--code-bg); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+.try-panel { background: var(--bg-secondary); padding: 15px; border-radius: 6px; margin-top: 10px; }
+.try-panel input, .try-panel select { padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); margin-right: 8px; margin-bottom: 8px; }
+.try-panel button { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+.try-panel button:hover { background: var(--accent-hover); }
+.response-viewer { margin-top: 10px; position: relative; }
+.copy-btn { position: absolute; top: 5px; right: 5px; padding: 4px 8px; font-size: 11px; background: var(--accent); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <h1>PandyDoc API</h1>
+  <h2>System</h2>
+  <a onclick="scrollToEndpoint('health')">GET /health</a>
+  <a onclick="scrollToEndpoint('settings-get')">GET /settings</a>
+  <a onclick="scrollToEndpoint('settings-put')">PUT /settings</a>
+  <h2>Documents</h2>
+  <a onclick="scrollToEndpoint('docs-list')">GET /documents</a>
+  <a onclick="scrollToEndpoint('docs-create')">POST /documents</a>
+  <a onclick="scrollToEndpoint('docs-get')">GET /documents/:id</a>
+  <a onclick="scrollToEndpoint('docs-update')">PUT /documents/:id</a>
+  <a onclick="scrollToEndpoint('docs-delete')">DELETE /documents/:id</a>
+  <h2>Check-In/Out</h2>
+  <a onclick="scrollToEndpoint('check-in')">POST /documents/:id/check-in</a>
+  <a onclick="scrollToEndpoint('check-out')">POST /documents/:id/check-out</a>
+  <h2>Versions</h2>
+  <a onclick="scrollToEndpoint('versions-list')">GET /documents/:id/versions</a>
+  <a onclick="scrollToEndpoint('versions-get')">GET /documents/:id/versions/:version</a>
+  <a onclick="scrollToEndpoint('restore')">POST /documents/:id/restore/:version</a>
+  <h2>Folders</h2>
+  <a onclick="scrollToEndpoint('folders-list')">GET /folders</a>
+  <a onclick="scrollToEndpoint('folders-create')">POST /folders</a>
+  <a onclick="scrollToEndpoint('folders-get')">GET /folders/:id</a>
+  <a onclick="scrollToEndpoint('folders-update')">PUT /folders/:id</a>
+  <a onclick="scrollToEndpoint('folders-delete')">DELETE /folders/:id</a>
+  <h2>Templates</h2>
+  <a onclick="scrollToEndpoint('templates-list')">GET /templates</a>
+  <a onclick="scrollToEndpoint('templates-create')">POST /templates</a>
+  <a onclick="scrollToEndpoint('templates-get')">GET /templates/:id</a>
+  <a onclick="scrollToEndpoint('templates-update')">PUT /templates/:id</a>
+  <a onclick="scrollToEndpoint('templates-delete')">DELETE /templates/:id</a>
+  <h2>Search</h2>
+  <a onclick="scrollToEndpoint('search')">GET /search</a>
+</div>
+<div class="main" id="main">
+  <h1 style="margin-bottom:20px">PandyDoc API Reference</h1>
+  <p style="color:var(--text-secondary);margin-bottom:30px">Base URL: <code>http://127.0.0.1:8080/api/v1</code></p>
+
+  <div class="endpoint" id="health">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/health</span></div>
+    <div class="description">Check server health and status.</div>
+    <div class="collapsible" onclick="this.classList.toggle('open')">Response Example</div>
+    <div class="collapsible-content"><pre>{"status":"ok","version":"1.0.0","uptime":123.45}</pre></div>
+    <div class="try-panel"><button onclick="tryRequest('GET','/api/v1/health')">Try It</button><div class="response-viewer" id="res-health"></div></div>
+  </div>
+
+  <div class="endpoint" id="docs-list">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/documents</span></div>
+    <div class="description">List documents with pagination and filtering.</div>
+    <div class="collapsible" onclick="this.classList.toggle('open')">Parameters</div>
+    <div class="collapsible-content"><pre>page: integer (default: 1)
+limit: integer (default: 20, max: 100)
+sort: name | created_at | updated_at
+order: asc | desc
+folder_id: uuid (optional)</pre></div>
+    <div class="collapsible" onclick="this.classList.toggle('open')">Response Example</div>
+    <div class="collapsible-content"><pre>{"data":[],"total":0,"page":1,"limit":20,"has_more":false}</pre></div>
+    <div class="try-panel"><button onclick="tryRequest('GET','/api/v1/documents')">Try It</button><div class="response-viewer" id="res-docs-list"></div></div>
+  </div>
+
+  <div class="endpoint" id="docs-create">
+    <div class="endpoint-header"><span class="method post">POST</span><span class="path">/documents</span></div>
+    <div class="description">Create a new document.</div>
+    <div class="collapsible" onclick="this.classList.toggle('open')">Request Body</div>
+    <div class="collapsible-content"><pre>{"name":"My Document","content":"...","folder_id":"uuid"}</pre></div>
+    <div class="try-panel"><input id="docs-create-name" placeholder="name"><input id="docs-create-content" placeholder="content"><button onclick="tryRequest('POST','/api/v1/documents',{name:document.getElementById('docs-create-name').value,content:document.getElementById('docs-create-content').value})">Try It</button><div class="response-viewer" id="res-docs-create"></div></div>
+  </div>
+
+  <div class="endpoint" id="docs-get">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/documents/:id</span></div>
+    <div class="description">Get a document by ID.</div>
+    <div class="try-panel"><input id="docs-get-id" placeholder="document id"><button onclick="tryRequest('GET','/api/v1/documents/'+document.getElementById('docs-get-id').value)">Try It</button><div class="response-viewer" id="res-docs-get"></div></div>
+  </div>
+
+  <div class="endpoint" id="docs-update">
+    <div class="endpoint-header"><span class="method put">PUT</span><span class="path">/documents/:id</span></div>
+    <div class="description">Update a document.</div>
+    <div class="try-panel"><input id="docs-update-id" placeholder="document id"><input id="docs-update-name" placeholder="name"><input id="docs-update-content" placeholder="content"><button onclick="tryRequest('PUT','/api/v1/documents/'+document.getElementById('docs-update-id').value,{name:document.getElementById('docs-update-name').value,content:document.getElementById('docs-update-content').value})">Try It</button><div class="response-viewer" id="res-docs-update"></div></div>
+  </div>
+
+  <div class="endpoint" id="docs-delete">
+    <div class="endpoint-header"><span class="method delete">DELETE</span><span class="path">/documents/:id</span></div>
+    <div class="description">Delete a document.</div>
+    <div class="try-panel"><input id="docs-delete-id" placeholder="document id"><button onclick="tryRequest('DELETE','/api/v1/documents/'+document.getElementById('docs-delete-id').value)">Try It</button><div class="response-viewer" id="res-docs-delete"></div></div>
+  </div>
+
+  <div class="endpoint" id="check-in">
+    <div class="endpoint-header"><span class="method post">POST</span><span class="path">/documents/:id/check-in</span></div>
+    <div class="description">Check in a document.</div>
+    <div class="try-panel"><input id="checkin-id" placeholder="document id"><input id="checkin-reason" placeholder="reason"><button onclick="tryRequest('POST','/api/v1/documents/'+document.getElementById('checkin-id').value+'/check-in',{reason:document.getElementById('checkin-reason').value})">Try It</button><div class="response-viewer" id="res-checkin"></div></div>
+  </div>
+
+  <div class="endpoint" id="check-out">
+    <div class="endpoint-header"><span class="method post">POST</span><span class="path">/documents/:id/check-out</span></div>
+    <div class="description">Check out a document.</div>
+    <div class="try-panel"><input id="checkout-id" placeholder="document id"><input id="checkout-reason" placeholder="reason"><button onclick="tryRequest('POST','/api/v1/documents/'+document.getElementById('checkout-id').value+'/check-out',{reason:document.getElementById('checkout-reason').value})">Try It</button><div class="response-viewer" id="res-checkout"></div></div>
+  </div>
+
+  <div class="endpoint" id="versions-list">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/documents/:id/versions</span></div>
+    <div class="description">List all versions of a document.</div>
+    <div class="try-panel"><input id="versions-list-id" placeholder="document id"><button onclick="tryRequest('GET','/api/v1/documents/'+document.getElementById('versions-list-id').value+'/versions')">Try It</button><div class="response-viewer" id="res-versions-list"></div></div>
+  </div>
+
+  <div class="endpoint" id="versions-get">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/documents/:id/versions/:version</span></div>
+    <div class="description">Get a specific version.</div>
+    <div class="try-panel"><input id="versions-get-id" placeholder="document id"><input id="versions-get-ver" placeholder="version number"><button onclick="tryRequest('GET','/api/v1/documents/'+document.getElementById('versions-get-id').value+'/versions/'+document.getElementById('versions-get-ver').value)">Try It</button><div class="response-viewer" id="res-versions-get"></div></div>
+  </div>
+
+  <div class="endpoint" id="restore">
+    <div class="endpoint-header"><span class="method post">POST</span><span class="path">/documents/:id/restore/:version</span></div>
+    <div class="description">Restore document to a specific version.</div>
+    <div class="try-panel"><input id="restore-id" placeholder="document id"><input id="restore-ver" placeholder="version number"><button onclick="tryRequest('POST','/api/v1/documents/'+document.getElementById('restore-id').value+'/restore/'+document.getElementById('restore-ver').value)">Try It</button><div class="response-viewer" id="res-restore"></div></div>
+  </div>
+
+  <div class="endpoint" id="folders-list">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/folders</span></div>
+    <div class="description">List all folders.</div>
+    <div class="try-panel"><button onclick="tryRequest('GET','/api/v1/folders')">Try It</button><div class="response-viewer" id="res-folders-list"></div></div>
+  </div>
+
+  <div class="endpoint" id="folders-create">
+    <div class="endpoint-header"><span class="method post">POST</span><span class="path">/folders</span></div>
+    <div class="description">Create a new folder.</div>
+    <div class="try-panel"><input id="folders-create-name" placeholder="name"><input id="folders-create-parent" placeholder="parent_id (optional)"><button onclick="tryRequest('POST','/api/v1/folders',{name:document.getElementById('folders-create-name').value,parent_id:document.getElementById('folders-create-parent').value||undefined})">Try It</button><div class="response-viewer" id="res-folders-create"></div></div>
+  </div>
+
+  <div class="endpoint" id="folders-get">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/folders/:id</span></div>
+    <div class="description">Get a folder by ID.</div>
+    <div class="try-panel"><input id="folders-get-id" placeholder="folder id"><button onclick="tryRequest('GET','/api/v1/folders/'+document.getElementById('folders-get-id').value)">Try It</button><div class="response-viewer" id="res-folders-get"></div></div>
+  </div>
+
+  <div class="endpoint" id="folders-update">
+    <div class="endpoint-header"><span class="method put">PUT</span><span class="path">/folders/:id</span></div>
+    <div class="description">Update a folder.</div>
+    <div class="try-panel"><input id="folders-update-id" placeholder="folder id"><input id="folders-update-name" placeholder="name"><button onclick="tryRequest('PUT','/api/v1/folders/'+document.getElementById('folders-update-id').value,{name:document.getElementById('folders-update-name').value})">Try It</button><div class="response-viewer" id="res-folders-update"></div></div>
+  </div>
+
+  <div class="endpoint" id="folders-delete">
+    <div class="endpoint-header"><span class="method delete">DELETE</span><span class="path">/folders/:id</span></div>
+    <div class="description">Delete a folder.</div>
+    <div class="try-panel"><input id="folders-delete-id" placeholder="folder id"><button onclick="tryRequest('DELETE','/api/v1/folders/'+document.getElementById('folders-delete-id').value)">Try It</button><div class="response-viewer" id="res-folders-delete"></div></div>
+  </div>
+
+  <div class="endpoint" id="templates-list">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/templates</span></div>
+    <div class="description">List all templates.</div>
+    <div class="try-panel"><button onclick="tryRequest('GET','/api/v1/templates')">Try It</button><div class="response-viewer" id="res-templates-list"></div></div>
+  </div>
+
+  <div class="endpoint" id="templates-create">
+    <div class="endpoint-header"><span class="method post">POST</span><span class="path">/templates</span></div>
+    <div class="description">Create a new template.</div>
+    <div class="try-panel"><input id="templates-create-name" placeholder="name"><input id="templates-create-content" placeholder="content"><input id="templates-create-desc" placeholder="description"><button onclick="tryRequest('POST','/api/v1/templates',{name:document.getElementById('templates-create-name').value,content:document.getElementById('templates-create-content').value,description:document.getElementById('templates-create-desc').value||undefined})">Try It</button><div class="response-viewer" id="res-templates-create"></div></div>
+  </div>
+
+  <div class="endpoint" id="templates-get">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/templates/:id</span></div>
+    <div class="description">Get a template by ID.</div>
+    <div class="try-panel"><input id="templates-get-id" placeholder="template id"><button onclick="tryRequest('GET','/api/v1/templates/'+document.getElementById('templates-get-id').value)">Try It</button><div class="response-viewer" id="res-templates-get"></div></div>
+  </div>
+
+  <div class="endpoint" id="templates-update">
+    <div class="endpoint-header"><span class="method put">PUT</span><span class="path">/templates/:id</span></div>
+    <div class="description">Update a template.</div>
+    <div class="try-panel"><input id="templates-update-id" placeholder="template id"><input id="templates-update-name" placeholder="name"><input id="templates-update-content" placeholder="content"><button onclick="tryRequest('PUT','/api/v1/templates/'+document.getElementById('templates-update-id').value,{name:document.getElementById('templates-update-name').value,content:document.getElementById('templates-update-content').value})">Try It</button><div class="response-viewer" id="res-templates-update"></div></div>
+  </div>
+
+  <div class="endpoint" id="templates-delete">
+    <div class="endpoint-header"><span class="method delete">DELETE</span><span class="path">/templates/:id</span></div>
+    <div class="description">Delete a template.</div>
+    <div class="try-panel"><input id="templates-delete-id" placeholder="template id"><button onclick="tryRequest('DELETE','/api/v1/templates/'+document.getElementById('templates-delete-id').value)">Try It</button><div class="response-viewer" id="res-templates-delete"></div></div>
+  </div>
+
+  <div class="endpoint" id="search">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/search</span></div>
+    <div class="description">Search documents by query string.</div>
+    <div class="try-panel"><input id="search-q" placeholder="query"><button onclick="tryRequest('GET','/api/v1/search?q='+encodeURIComponent(document.getElementById('search-q').value))">Try It</button><div class="response-viewer" id="res-search"></div></div>
+  </div>
+
+  <div class="endpoint" id="settings-get">
+    <div class="endpoint-header"><span class="method get">GET</span><span class="path">/settings</span></div>
+    <div class="description">Get API settings.</div>
+    <div class="try-panel"><button onclick="tryRequest('GET','/api/v1/settings')">Try It</button><div class="response-viewer" id="res-settings-get"></div></div>
+  </div>
+
+  <div class="endpoint" id="settings-put">
+    <div class="endpoint-header"><span class="method put">PUT</span><span class="path">/settings</span></div>
+    <div class="description">Update API settings.</div>
+    <div class="try-panel"><input id="settings-port" placeholder="port"><button onclick="tryRequest('PUT','/api/v1/settings',{port:parseInt(document.getElementById('settings-port').value)||undefined})">Try It</button><div class="response-viewer" id="res-settings-put"></div></div>
+  </div>
+</div>
+<script>
+function scrollToEndpoint(id) { document.getElementById(id)?.scrollIntoView({behavior:'smooth'}); }
+function tryRequest(method, path, body) {
+  const apiKey = prompt('Enter API key:', localStorage.getItem('pandydoc_api_key') || '');
+  if (!apiKey) return;
+  localStorage.setItem('pandydoc_api_key', apiKey);
+  const baseUrl = window.location.origin;
+  const url = baseUrl + path;
+  const opts = { method, headers: { 'X-API-Key': apiKey } };
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const resId = 'res-' + path.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  let viewer = document.getElementById(resId);
+  if (!viewer) { viewer = document.createElement('div'); viewer.id = resId; viewer.className = 'response-viewer'; document.querySelector('.endpoint:last-child')?.appendChild(viewer); }
+  viewer.innerHTML = '<pre>Loading...</pre>';
+  const curl = `curl -X ${method} ${url} -H "X-API-Key: ${apiKey}"${body ? ` -d '${JSON.stringify(body)}'` : ''}`;
+  fetch(url, opts).then(r => r.text().then(t => {
+    let formatted;
+    try { formatted = JSON.stringify(JSON.parse(t), null, 2); } catch { formatted = t; }
+    viewer.innerHTML = `<button class="copy-btn" onclick="navigator.clipboard.writeText(\`${curl.replace(/`/g, '\\`')}\`)">Copy cURL</button><pre>${formatted}</pre>`;
+  })).catch(e => { viewer.innerHTML = `<pre>Error: ${e.message}\n\ncURL:\n${curl}</pre>`; });
+}
+</script>
+</body>
+</html>

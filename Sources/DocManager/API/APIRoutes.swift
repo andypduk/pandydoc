@@ -8,6 +8,7 @@ func configureRoutes(_ router: Router<some RequestContext>) {
     let templateController = TemplateController()
     let searchController = SearchController()
     let systemController = SystemController()
+    let docsController = DocsController()
 
     documentController.registerRoutes(router)
     checkInOutController.registerRoutes(router)
@@ -16,4 +17,5 @@ func configureRoutes(_ router: Router<some RequestContext>) {
     templateController.registerRoutes(router)
     searchController.registerRoutes(router)
     systemController.registerRoutes(router)
+    docsController.registerRoutes(router)
 }

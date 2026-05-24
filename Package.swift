@@ -30,7 +30,10 @@ let package = Package(
             path: "Sources/DocManager",
             resources: [
                 .copy("../../Resources/PandaHead.icns"),
-                .copy("../../Resources/PandaHead.pdf")
+                .copy("../../Resources/PandaHead.pdf"),
+                .process("API/Docs/openapi.json"),
+                .process("API/Docs/docs.html"),
+                .process("API/Docs/test-dashboard.html"),
             ],
             linkerSettings: [
                 .linkedFramework("AppKit")
