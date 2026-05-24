@@ -174,7 +174,8 @@ struct DocumentQuickView: View {
             }) {
                 Image(systemName: "arrow.up.right.square")
             }
-            .help("Open in Default App")
+            .disabled(document.isLocked)
+            .help(document.isLocked ? "Document is locked" : "Open in Default App")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
