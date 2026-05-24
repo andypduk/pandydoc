@@ -647,6 +647,18 @@ final class DocumentListViewModel: ObservableObject {
         }
     }
 
+    func canOpenDocument(_ document: Document) -> Bool {
+        return !document.isLocked
+    }
+
+    func canExportTemplate(_ document: Document) -> Bool {
+        return !document.isLocked || !isShowingTemplates
+    }
+
+    func canDeleteTemplate(_ document: Document) -> Bool {
+        return !document.isLocked || !isShowingTemplates
+    }
+
     func startRename(_ document: Document) {
         documentToRename = document
         renameText = document.name
