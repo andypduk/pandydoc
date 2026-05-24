@@ -32,7 +32,7 @@ final class DocumentListViewModel: ObservableObject {
     private var documentToRename: Document?
     @Published var showFolderRenameAlert = false
     @Published var folderRenameText = ""
-    private var folderToRename: Folder?
+    var folderToRename: Folder?
     @Published var folderNameLookup: [UUID: String] = [:]
     @Published var allFolders: [Folder] = []
     @Published var canNavigateBack = false

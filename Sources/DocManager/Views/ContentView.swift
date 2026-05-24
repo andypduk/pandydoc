@@ -88,18 +88,13 @@ struct ContentView: View {
             Button("Cancel", role: .cancel) { viewModel.showRenameAlert = false }
             Button("Rename") { viewModel.performRename() }
         }
-        .alert("Rename Folder", isPresented: $viewModel.showFolderRenameAlert) {
-            TextField("Name", text: $viewModel.folderRenameText)
-            Button("Cancel", role: .cancel) { viewModel.showFolderRenameAlert = false }
-            Button("Rename") { viewModel.performFolderRename() }
-        }
-        .alert("Delete Folder", isPresented: $viewModel.showDeleteFolderConfirmation) {
-            Button("Cancel", role: .cancel) { viewModel.folderToDelete = nil }
-            Button("Delete", role: .destructive) { viewModel.confirmDeleteFolder() }
+        .alert("Error", isPresented: .init(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
         } message: {
-            if let folder = viewModel.folderToDelete {
-                Text("Delete \"\(folder.name)\"? Documents will be moved to All Documents.")
-            }
+            Text(viewModel.errorMessage ?? "")
         }
         .sheet(isPresented: $viewModel.showArchiveSheet) {
             ArchiveSheetView(viewModel: viewModel)
@@ -303,7 +298,14 @@ struct ContentView: View {
                         isCreatingFolder = false
                         viewModel.newFolderName = ""
                         viewModel.newFolderParentID = nil
-                    }
+                    },
+                    showFolderRenameAlert: $viewModel.showFolderRenameAlert,
+                    folderRenameText: $viewModel.folderRenameText,
+                    folderToRename: $viewModel.folderToRename,
+                    showDeleteFolderConfirmation: $viewModel.showDeleteFolderConfirmation,
+                    folderToDelete: $viewModel.folderToDelete,
+                    onPerformFolderRename: { viewModel.performFolderRename() },
+                    onConfirmDeleteFolder: { viewModel.confirmDeleteFolder() }
                 )
             } header: {
                 HStack {
@@ -588,6 +590,14 @@ struct FolderTreeView: View {
     let onCreateFolder: (String, UUID?) -> Void
     let onCancelCreate: () -> Void
 
+    @Binding var showFolderRenameAlert: Bool
+    @Binding var folderRenameText: String
+    @Binding var folderToRename: Folder?
+    @Binding var showDeleteFolderConfirmation: Bool
+    @Binding var folderToDelete: Folder?
+    let onPerformFolderRename: () -> Void
+    let onConfirmDeleteFolder: () -> Void
+
     private var flatRows: [(node: DocumentListViewModel.FolderNode, depth: Int)] {
         var result: [(DocumentListViewModel.FolderNode, Int)] = []
         func flatten(_ nodes: [DocumentListViewModel.FolderNode], depth: Int) {
@@ -617,7 +627,14 @@ struct FolderTreeView: View {
                     onArchiveFolder: onArchiveFolder,
                     onNewSubfolder: onNewSubfolder,
                     onToggleProtection: onToggleProtection,
-                    onMoveFolder: onMoveFolder
+                    onMoveFolder: onMoveFolder,
+                    showFolderRenameAlert: $showFolderRenameAlert,
+                    folderRenameText: $folderRenameText,
+                    folderToRename: $folderToRename,
+                    showDeleteFolderConfirmation: $showDeleteFolderConfirmation,
+                    folderToDelete: $folderToDelete,
+                    onPerformFolderRename: onPerformFolderRename,
+                    onConfirmDeleteFolder: onConfirmDeleteFolder
                 )
 
                 if isCreatingFolder, let targetID = newFolderParentID, targetID == row.node.id {
@@ -725,6 +742,14 @@ struct FolderRow: View {
     let onToggleProtection: (Folder) -> Void
     let onMoveFolder: (Folder) -> Void
 
+    @Binding var showFolderRenameAlert: Bool
+    @Binding var folderRenameText: String
+    @Binding var folderToRename: Folder?
+    @Binding var showDeleteFolderConfirmation: Bool
+    @Binding var folderToDelete: Folder?
+    let onPerformFolderRename: () -> Void
+    let onConfirmDeleteFolder: () -> Void
+
     private var hasChildren: Bool {
         node.children != nil && !node.children!.isEmpty
     }
@@ -788,6 +813,33 @@ struct FolderRow: View {
             }
         }
         .tag(SidebarItem.folder(node.folder))
+        .alert("Rename Folder", isPresented: Binding(
+            get: { showFolderRenameAlert && folderToRename?.id == node.folder.id },
+            set: { if !$0 { showFolderRenameAlert = false; folderToRename = nil } }
+        )) {
+            TextField("Name", text: $folderRenameText)
+            Button("Cancel", role: .cancel) {
+                showFolderRenameAlert = false
+                folderToRename = nil
+            }
+            Button("Rename") {
+                onPerformFolderRename()
+            }
+        }
+        .alert("Delete Folder", isPresented: Binding(
+            get: { showDeleteFolderConfirmation && folderToDelete?.id == node.folder.id },
+            set: { if !$0 { showDeleteFolderConfirmation = false; folderToDelete = nil } }
+        )) {
+            Button("Cancel", role: .cancel) {
+                showDeleteFolderConfirmation = false
+                folderToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                onConfirmDeleteFolder()
+            }
+        } message: {
+            Text("Delete \"\(node.folder.name)\"? Documents will be moved to All Documents.")
+        }
     }
 }
 
