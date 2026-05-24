@@ -53,6 +53,11 @@ struct DocManagerApp: App {
             }
 
             CommandGroup(after: .windowSize) {
+                Button("Show Inbox") {
+                    NotificationCenter.default.post(name: .navigateToInbox, object: nil)
+                }
+                .keyboardShortcut("3", modifiers: [.command])
+
                 Button("Show All Documents") {
                     NotificationCenter.default.post(name: .navigateToAllDocuments, object: nil)
                 }
@@ -103,4 +108,5 @@ extension Notification.Name {
     static let showShortcuts = Notification.Name("showShortcuts")
     static let navigateToAllDocuments = Notification.Name("navigateToAllDocuments")
     static let navigateToTemplates = Notification.Name("navigateToTemplates")
+    static let navigateToInbox = Notification.Name("navigateToInbox")
 }

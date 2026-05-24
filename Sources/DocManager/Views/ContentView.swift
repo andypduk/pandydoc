@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: Hashable {
+    case inbox
     case allDocuments
     case templates
     case folder(Folder)
@@ -131,9 +132,13 @@ struct ContentView: View {
             NotificationCenter.default.addObserver(
                 forName: .navigateToTemplates, object: nil, queue: .main
             ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToTemplates() } }
+            NotificationCenter.default.addObserver(
+                forName: .navigateToInbox, object: nil, queue: .main
+            ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToInbox() } }
         }
         .onChange(of: sidebarSelection) { _, newSelection in
             switch newSelection {
+            case .inbox: viewModel.navigateToInbox()
             case .allDocuments, .none: viewModel.navigateToRoot()
             case .templates: viewModel.navigateToTemplates()
             case .folder(let folder): viewModel.navigateToFolder(folder)
@@ -142,6 +147,8 @@ struct ContentView: View {
         .onChange(of: viewModel.currentFolder) { _, _ in
             if let folder = viewModel.currentFolder {
                 sidebarSelection = .folder(folder)
+            } else if viewModel.isShowingInbox {
+                sidebarSelection = .inbox
             } else if viewModel.isShowingTemplates {
                 sidebarSelection = .templates
             } else {
@@ -196,6 +203,39 @@ struct ContentView: View {
             Divider()
             List(selection: $sidebarSelection) {
             Section {
+                HStack(spacing: 8) {
+                    Image(systemName: "tray.fill")
+                        .foregroundColor(.accentColor)
+                        .frame(width: 20)
+                    Text("Inbox")
+                        .font(.body)
+                        .fontWeight(viewModel.isShowingInbox ? .medium : .regular)
+                    Spacer()
+                    if viewModel.inboxDocumentCount > 0 {
+                        Text("\(viewModel.inboxDocumentCount)")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                }
+                .tag(SidebarItem.inbox)
+                .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+                    handleFileDrop(providers: providers, targetFolderID: viewModel.getInboxFolderID())
+                    return true
+                }
+                .contextMenu {
+                    Button(action: { showImportSheet = true }) {
+                        Label("Import Document...", systemImage: "square.and.arrow.down")
+                    }
+                    Divider()
+                    Button(action: { viewModel.refreshDocuments() }) {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                }
+
                 HStack(spacing: 8) {
                     Image(systemName: viewModel.isShowingAllDocuments ? "house.fill" : "house")
                         .foregroundColor(.accentColor)

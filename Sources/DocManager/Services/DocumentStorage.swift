@@ -16,7 +16,7 @@ protocol DocumentStorageProtocol {
     func getVersion(documentId: UUID, versionNumber: Int) -> DocumentVersion?
     func restoreVersion(documentId: UUID, versionNumber: Int) throws -> String
     
-    func storeReceivedPDF(sourcePath: String, fileName: String) throws -> Document
+    func storeReceivedPDF(sourcePath: String, fileName: String, parentID: UUID?) throws -> Document
     
     func getFolders(parentID: UUID?) throws -> [Folder]
     func getAllFolders() -> [Folder]
@@ -194,7 +194,7 @@ final class DocumentStorage: DocumentStorageProtocol {
         return destURL.path
     }
     
-    func storeReceivedPDF(sourcePath: String, fileName: String) throws -> Document {
+    func storeReceivedPDF(sourcePath: String, fileName: String, parentID: UUID?) throws -> Document {
         let conn = try db.getConnection()
         
         let docName = (fileName as NSString).deletingPathExtension
@@ -204,7 +204,8 @@ final class DocumentStorage: DocumentStorageProtocol {
             name: docName,
             fileName: sanitizedFileName,
             filePath: sourcePath,
-            fileSize: 0
+            fileSize: 0,
+            parentID: parentID
         )
         
         let destURL = documentsURL.appendingPathComponent("\(doc.id.uuidString).pdf")

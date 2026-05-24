@@ -117,9 +117,11 @@ final class DocumentWatcherService {
         
         DispatchQueue.main.async {
             do {
+                let inboxFolderID = self.getInboxFolderID()
                 let document = try self.storage.storeReceivedPDF(
                     sourcePath: filePath,
-                    fileName: fileName
+                    fileName: fileName,
+                    parentID: inboxFolderID
                 )
                 
                 try? self.fileManager.removeItem(atPath: filePath)
@@ -133,5 +135,10 @@ final class DocumentWatcherService {
                 print("Failed to process incoming file: \(error)")
             }
         }
+    }
+    
+    private func getInboxFolderID() -> UUID? {
+        let allFolders = self.storage.getAllFolders()
+        return allFolders.first { $0.name == "Inbox" }?.id
     }
 }

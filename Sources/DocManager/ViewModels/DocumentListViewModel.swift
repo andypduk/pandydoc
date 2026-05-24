@@ -51,10 +51,32 @@ final class DocumentListViewModel: ObservableObject {
 
     private var templatesFolderID: UUID?
     private let templatesFolderName = "Templates"
+    private var inboxFolderID: UUID?
+    private let inboxFolderName = "Inbox"
+    @Published var isShowingInbox = false
+    var inboxDocumentCount: Int {
+        guard let inboxID = inboxFolderID else { return 0 }
+        return (try? storage.getDocumentsInFolder(folderID: inboxID).count) ?? 0
+    }
 
     func getTemplatesFolderID() -> UUID? {
         ensureTemplatesFolderExists()
         return templatesFolderID
+    }
+
+    func getInboxFolderID() -> UUID? {
+        ensureInboxFolderExists()
+        return inboxFolderID
+    }
+
+    func navigateToInbox() {
+        ensureInboxFolderExists()
+        folderPath.removeAll()
+        currentFolder = nil
+        isShowingTemplates = false
+        isShowingInbox = true
+        recordNavigation(.inbox)
+        refreshDocuments()
     }
 
     private var navigationHistory: [SidebarNavigation] = []
@@ -63,6 +85,7 @@ final class DocumentListViewModel: ObservableObject {
     enum SidebarNavigation: Hashable {
         case allDocuments
         case templates
+        case inbox
         case folder(Folder)
     }
 
@@ -140,25 +163,35 @@ final class DocumentListViewModel: ObservableObject {
     
     func refreshDocuments() {
         ensureTemplatesFolderExists()
+        ensureInboxFolderExists()
         
-        if isShowingTemplates, let templatesID = templatesFolderID {
+        if isShowingInbox, let inboxID = inboxFolderID {
+            documents = (try? storage.getDocumentsInFolder(folderID: inboxID)) ?? []
+            isShowingAllDocuments = false
+            isShowingTemplates = false
+        } else if isShowingTemplates, let templatesID = templatesFolderID {
             documents = (try? storage.getDocumentsInFolder(folderID: templatesID)) ?? []
         } else if let folder = currentFolder {
             documents = (try? storage.getDocumentsInFolder(folderID: folder.id)) ?? []
             isShowingAllDocuments = false
             isShowingTemplates = false
+            isShowingInbox = false
         } else {
             documents = storage.getAllDocumentsRecursive()
             if let templatesID = templatesFolderID {
                 documents = documents.filter { $0.parentID != templatesID }
             }
+            if let inboxID = inboxFolderID {
+                documents = documents.filter { $0.parentID != inboxID }
+            }
             isShowingAllDocuments = true
             isShowingTemplates = false
+            isShowingInbox = false
             buildFolderLookup()
         }
         folders = (try? storage.getFolders(parentID: currentFolder?.id)) ?? []
-        folders = folders.filter { $0.id != templatesFolderID }
-        allFolders = storage.getAllFolders().filter { $0.id != templatesFolderID }
+        folders = folders.filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
+        allFolders = storage.getAllFolders().filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
         applyFilters()
         if let sel = selectedDocument, let updated = documents.first(where: { $0.id == sel.id }) {
             selectedDocument = updated
@@ -194,6 +227,7 @@ final class DocumentListViewModel: ObservableObject {
         folderPath.removeAll()
         currentFolder = nil
         isShowingTemplates = false
+        isShowingInbox = false
         recordNavigation(.allDocuments)
         refreshDocuments()
     }
@@ -214,6 +248,20 @@ final class DocumentListViewModel: ObservableObject {
             templatesFolderID = existing.id
         } else if let created = try? storage.createFolder(name: templatesFolderName, parentID: nil) {
             templatesFolderID = created.id
+        }
+    }
+
+    private func ensureInboxFolderExists() {
+        guard inboxFolderID == nil else { return }
+        let rootFolders = (try? storage.getFolders(parentID: nil)) ?? []
+        if let existing = rootFolders.first(where: { $0.name == inboxFolderName }) {
+            inboxFolderID = existing.id
+            if !existing.protected {
+                try? storage.toggleFolderProtection(id: existing.id)
+            }
+        } else if let created = try? storage.createFolder(name: inboxFolderName, parentID: nil) {
+            inboxFolderID = created.id
+            try? storage.toggleFolderProtection(id: created.id)
         }
     }
 
@@ -322,11 +370,19 @@ final class DocumentListViewModel: ObservableObject {
             folderPath.removeAll()
             currentFolder = nil
             isShowingTemplates = false
+            isShowingInbox = false
         case .templates:
             folderPath.removeAll()
             currentFolder = nil
             ensureTemplatesFolderExists()
             isShowingTemplates = true
+            isShowingInbox = false
+        case .inbox:
+            folderPath.removeAll()
+            currentFolder = nil
+            ensureInboxFolderExists()
+            isShowingInbox = true
+            isShowingTemplates = false
         case .folder(let folder):
             if let idx = folderPath.firstIndex(where: { $0.id == folder.id }) {
                 folderPath = Array(folderPath.prefix(through: idx))
@@ -335,6 +391,7 @@ final class DocumentListViewModel: ObservableObject {
             }
             currentFolder = folder
             isShowingTemplates = false
+            isShowingInbox = false
         }
         refreshDocuments()
     }
