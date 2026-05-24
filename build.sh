@@ -28,7 +28,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << 'EOF'
     <key>CFBundleExecutable</key>
     <string>PandyDoc</string>
     <key>CFBundleIconFile</key>
-    <string>PandaIcon</string>
+    <string>PandaHead</string>
     <key>CFBundleIdentifier</key>
     <string>com.pandydoc.app</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -51,7 +51,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << 'EOF'
 </plist>
 EOF
 
-cp Resources/PandaIcon.icns "$APP_BUNDLE/Contents/Resources/" 2>/dev/null || true
+cp Resources/PandaHead.icns "$APP_BUNDLE/Contents/Resources/" 2>/dev/null || true
 
 echo "App bundle created at: $APP_BUNDLE"
 echo "Launching..."
