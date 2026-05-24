@@ -8,6 +8,7 @@ protocol DocumentStorageProtocol {
     func getDocument(id: UUID) -> Document?
     func getAllDocuments() -> [Document]
     func searchDocuments(query: String, tags: [String]) -> [Document]
+    func getAllTags() -> [(tag: String, count: Int)]
     func deleteDocument(id: UUID) throws
     func updateDocument(_ document: Document) throws
     
@@ -16,7 +17,7 @@ protocol DocumentStorageProtocol {
     func getVersion(documentId: UUID, versionNumber: Int) -> DocumentVersion?
     func restoreVersion(documentId: UUID, versionNumber: Int) throws -> String
     
-    func storeReceivedPDF(sourcePath: String, fileName: String, parentID: UUID?) throws -> Document
+    func storeReceivedPDF(sourcePath: String, fileName: String, parentID: UUID?, tags: [String]) throws -> Document
     
     func getFolders(parentID: UUID?) throws -> [Folder]
     func getAllFolders() -> [Folder]
@@ -84,6 +85,11 @@ final class DocumentStorage: DocumentStorageProtocol {
     func searchDocuments(query: String, tags: [String]) -> [Document] {
         guard let conn = try? db.getConnection() else { return [] }
         return (try? db.searchDocuments(db: conn, query: query, tags: tags)) ?? []
+    }
+    
+    func getAllTags() -> [(tag: String, count: Int)] {
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getAllTags(db: conn)) ?? []
     }
     
     func deleteDocument(id: UUID) throws {
@@ -194,19 +200,22 @@ final class DocumentStorage: DocumentStorageProtocol {
         return destURL.path
     }
     
-    func storeReceivedPDF(sourcePath: String, fileName: String, parentID: UUID?) throws -> Document {
+    func storeReceivedPDF(sourcePath: String, fileName: String, parentID: UUID?, tags: [String]) throws -> Document {
         let conn = try db.getConnection()
         
         let docName = (fileName as NSString).deletingPathExtension
         let sanitizedFileName = sanitizeFileName(fileName)
         
-        let doc = Document.createNew(
+        let normalizedTags = tags.map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty }
+        
+        var doc = Document.createNew(
             name: docName,
             fileName: sanitizedFileName,
             filePath: sourcePath,
             fileSize: 0,
             parentID: parentID
         )
+        doc.tags.append(contentsOf: normalizedTags)
         
         let destURL = documentsURL.appendingPathComponent("\(doc.id.uuidString).pdf")
         try fileManager.copyItem(atPath: sourcePath, toPath: destURL.path)

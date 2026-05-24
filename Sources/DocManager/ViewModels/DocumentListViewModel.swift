@@ -10,6 +10,8 @@ final class DocumentListViewModel: ObservableObject {
     @Published var documentRefreshToken: Int = 0
     @Published var searchQuery = ""
     @Published var selectedTags: [String] = []
+    @Published var allTags: [(tag: String, count: Int)] = []
+    @Published var showTagCloud = false
     @Published var filterStatus: DocumentStatus?
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -192,6 +194,7 @@ final class DocumentListViewModel: ObservableObject {
         folders = (try? storage.getFolders(parentID: currentFolder?.id)) ?? []
         folders = folders.filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
         allFolders = storage.getAllFolders().filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
+        allTags = storage.getAllTags()
         applyFilters()
         if let sel = selectedDocument, let updated = documents.first(where: { $0.id == sel.id }) {
             selectedDocument = updated
@@ -681,6 +684,52 @@ final class DocumentListViewModel: ObservableObject {
         } catch {
             errorMessage = "Failed to toggle protection: \(error.localizedDescription)"
         }
+    }
+
+    func addTag(to document: Document, tag: String) {
+        let normalized = tag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalized.isEmpty, !document.tags.contains(normalized) else { return }
+        do {
+            var updated = document
+            updated.tags.append(normalized)
+            try storage.updateDocument(updated)
+            refreshDocuments()
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
+        } catch {
+            errorMessage = "Failed to add tag: \(error.localizedDescription)"
+        }
+    }
+
+    func removeTag(from document: Document, tag: String) {
+        do {
+            var updated = document
+            updated.tags.removeAll { $0 == tag }
+            try storage.updateDocument(updated)
+            refreshDocuments()
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
+        } catch {
+            errorMessage = "Failed to remove tag: \(error.localizedDescription)"
+        }
+    }
+
+    func toggleTagFilter(_ tag: String) {
+        if let idx = selectedTags.firstIndex(of: tag) {
+            selectedTags.remove(at: idx)
+        } else {
+            selectedTags.append(tag)
+        }
+        searchDocuments()
+    }
+
+    func clearTagFilters() {
+        selectedTags.removeAll()
+        searchDocuments()
     }
 
     func toggleFolderProtection(_ folder: Folder) {

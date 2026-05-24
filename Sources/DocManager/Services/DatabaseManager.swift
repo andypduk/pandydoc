@@ -369,14 +369,31 @@ final class DatabaseManager {
             filteredQuery = filteredQuery.filter(nameMatch || fileNameMatch)
         }
         
+        var results = try db.prepare(filteredQuery.order(updatedAt.desc)).map { try rowToDocument($0) }
+        
         if !tags.isEmpty {
-            for tag in tags {
-                let tagPattern = "%\(tag)%"
-                filteredQuery = filteredQuery.filter(self.tags.like(tagPattern))
+            let normalizedFilterTags = tags.map { $0.lowercased() }
+            results = results.filter { doc in
+                let docTags = doc.tags.map { $0.lowercased() }
+                return normalizedFilterTags.allSatisfy { filterTag in
+                    docTags.contains { $0.contains(filterTag) || filterTag.contains($0) }
+                }
             }
         }
         
-        return try db.prepare(filteredQuery.order(updatedAt.desc)).map { try rowToDocument($0) }
+        return results
+    }
+    
+    func getAllTags(db: Connection) throws -> [(tag: String, count: Int)] {
+        let allDocs = try db.prepare(documents).map { try rowToDocument($0) }
+        var tagCounts: [String: Int] = [:]
+        for doc in allDocs {
+            for tag in doc.tags {
+                let normalized = tag.lowercased()
+                tagCounts[normalized, default: 0] += 1
+            }
+        }
+        return tagCounts.sorted { $0.key < $1.key }.map { (tag: $0.key, count: $0.value) }
     }
     
     func deleteDocument(db: Connection, id: UUID) throws {

@@ -121,7 +121,8 @@ final class DocumentWatcherService {
                 let document = try self.storage.storeReceivedPDF(
                     sourcePath: filePath,
                     fileName: fileName,
-                    parentID: inboxFolderID
+                    parentID: inboxFolderID,
+                    tags: []
                 )
                 
                 try? self.fileManager.removeItem(atPath: filePath)

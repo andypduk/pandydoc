@@ -46,7 +46,8 @@ final class PDFPrinterService {
         let document = try storage.storeReceivedPDF(
             sourcePath: destURL.path,
             fileName: fileName,
-            parentID: nil
+            parentID: nil,
+            tags: []
         )
         
         try? fileManager.removeItem(at: destURL)

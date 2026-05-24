@@ -359,8 +359,65 @@ struct ContentView: View {
                     .help("New Folder")
                 }
             }
+
+            if !viewModel.allTags.isEmpty {
+                Section {
+                    ForEach(viewModel.allTags, id: \.tag) { tagInfo in
+                        HStack(spacing: 6) {
+                            Image(systemName: viewModel.selectedTags.contains(tagInfo.tag) ? "tag.fill" : "tag")
+                                .foregroundColor(viewModel.selectedTags.contains(tagInfo.tag) ? .accentColor : .secondary)
+                                .frame(width: 16)
+                            Text(tagInfo.tag.capitalized)
+                                .font(.body)
+                                .lineLimit(1)
+                            Spacer()
+                            Text("\(tagInfo.count)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.toggleTagFilter(tagInfo.tag)
+                        }
+                        .contextMenu {
+                            Button(action: {
+                                viewModel.selectedTags = [tagInfo.tag]
+                                viewModel.searchDocuments()
+                            }) {
+                                Label("Filter by this tag", systemImage: "tag")
+                            }
+                        }
+                    }
+                    if !viewModel.selectedTags.isEmpty {
+                        Button(action: { viewModel.clearTagFilters() }) {
+                            HStack {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                                Text("Clear filters")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    HStack {
+                        Text("Tags")
+                        Spacer()
+                        Button(action: { viewModel.showTagCloud = true }) {
+                            Image(systemName: "circle.grid.2x2")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Show Tag Cloud")
+                    }
+                }
+            }
         }
         .listStyle(SidebarListStyle())
+        }
+        .sheet(isPresented: $viewModel.showTagCloud) {
+            TagCloudView(viewModel: viewModel)
         }
     }
 
@@ -1359,5 +1416,63 @@ struct ShortcutRow: View {
                 .cornerRadius(4)
                 .monospacedDigit()
         }
+    }
+}
+
+struct TagCloudView: View {
+    @ObservedObject var viewModel: DocumentListViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    private var maxCount: Int {
+        viewModel.allTags.map { $0.count }.max() ?? 1
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                FlowLayout(spacing: 8) {
+                    ForEach(viewModel.allTags, id: \.tag) { tagInfo in
+                        let normalizedSize = CGFloat(tagInfo.count) / CGFloat(maxCount)
+                        let fontSize: CGFloat = 12 + normalizedSize * 20
+                        Button(action: {
+                            viewModel.toggleTagFilter(tagInfo.tag)
+                        }) {
+                            HStack(spacing: 4) {
+                                Text(tagInfo.tag.capitalized)
+                                    .font(.system(size: fontSize, weight: normalizedSize > 0.5 ? .semibold : .regular))
+                                    .foregroundColor(viewModel.selectedTags.contains(tagInfo.tag) ? .white : .primary)
+                                Text("\(tagInfo.count)")
+                                    .font(.system(size: fontSize * 0.7))
+                                    .foregroundColor(viewModel.selectedTags.contains(tagInfo.tag) ? .white.opacity(0.8) : .secondary)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                viewModel.selectedTags.contains(tagInfo.tag)
+                                    ? AnyShapeStyle(Color.accentColor)
+                                    : AnyShapeStyle(Color.secondary.opacity(0.1))
+                            )
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Tag Cloud")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if !viewModel.selectedTags.isEmpty {
+                        Button("Clear Filters") {
+                            viewModel.clearTagFilters()
+                        }
+                    }
+                }
+            }
+        }
+        .frame(width: 500, height: 400)
     }
 }

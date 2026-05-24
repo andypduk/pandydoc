@@ -50,6 +50,8 @@ struct DocumentQuickView: View {
         VStack(spacing: 0) {
             toolbar
             Divider()
+            tagSection
+            Divider()
             documentPreview
             Divider()
             statusBar
@@ -71,6 +73,47 @@ struct DocumentQuickView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    @State private var newTagText = ""
+
+    private var tagSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Tags")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            if !document.tags.isEmpty {
+                FlowLayout {
+                    ForEach(document.tags, id: \.self) { tag in
+                        TagChip(tag: tag) {
+                            viewModel.removeTag(from: document, tag: tag)
+                        }
+                    }
+                }
+            }
+            HStack(spacing: 4) {
+                Image(systemName: "tag")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("Add tag...", text: $newTagText)
+                    .textFieldStyle(.plain)
+                    .font(.caption)
+                    .onSubmit {
+                        if !newTagText.isEmpty {
+                            viewModel.addTag(to: document, tag: newTagText)
+                            newTagText = ""
+                        }
+                    }
+            }
+            .padding(4)
+            .background(Color(NSColor.textBackgroundColor))
+            .cornerRadius(4)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     private var toolbar: some View {
@@ -353,5 +396,66 @@ struct QuickLookView: NSViewRepresentable {
 
     func updateNSView(_ nsView: QLPreviewView, context: Context) {
         nsView.previewItem = fileURL as NSURL
+    }
+}
+
+struct TagChip: View {
+    let tag: String
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Text(tag)
+                .font(.caption)
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 10))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(Color.accentColor.opacity(0.15))
+        .cornerRadius(8)
+    }
+}
+
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = layout(proposal: proposal, subviews: subviews)
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = layout(proposal: proposal, subviews: subviews)
+        for (index, position) in result.positions.enumerated() {
+            subviews[index].place(at: position, anchor: .topLeading, proposal: proposal)
+        }
+    }
+
+    private func layout(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
+        let maxWidth = proposal.width ?? .infinity
+        var positions: [CGPoint] = []
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var lineHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(proposal)
+            if currentX + size.width > maxWidth && currentX > 0 {
+                currentX = 0
+                currentY += lineHeight + spacing
+                lineHeight = 0
+            }
+            positions.append(CGPoint(x: currentX, y: currentY))
+            currentX += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+        }
+
+        let finalHeight = currentY + lineHeight
+        return (CGSize(width: maxWidth, height: finalHeight), positions)
     }
 }
