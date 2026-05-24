@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupAppIcon()
         setupNotifications()
         FolderAccessManager.shared.resolveAllBookmarks()
+        DocumentWatcherService.shared.watchDirectoryForChanges()
         NSApp.activate(ignoringOtherApps: true)
     }
     

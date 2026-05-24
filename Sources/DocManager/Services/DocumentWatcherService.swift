@@ -117,12 +117,18 @@ final class DocumentWatcherService {
         
         DispatchQueue.main.async {
             do {
-                _ = try self.storage.storeReceivedPDF(
+                let document = try self.storage.storeReceivedPDF(
                     sourcePath: filePath,
                     fileName: fileName
                 )
                 
                 try? self.fileManager.removeItem(atPath: filePath)
+                
+                NotificationCenter.default.post(
+                    name: .documentReceived,
+                    object: nil,
+                    userInfo: ["documentId": document.id, "documentName": document.name]
+                )
             } catch {
                 print("Failed to process incoming file: \(error)")
             }
