@@ -419,7 +419,7 @@ struct ContentView: View {
         .padding(.horizontal, DesignTokens.Spacing.sm)
         .padding(.vertical, DesignTokens.Spacing.xs)
         .contentShape(Rectangle())
-        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+        .onDrop(of: [.fileURL, .plainText], isTargeted: nil) { providers in
             onDrop?(providers)
             return true
         }
@@ -466,7 +466,7 @@ struct ContentView: View {
         .onChange(of: viewModel.searchQuery) { _, _ in
             viewModel.searchDocuments()
         }
-        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+        .onDrop(of: [.fileURL, .plainText], isTargeted: nil) { providers in
             handleDropToFolder(providers: providers, targetFolderID: viewModel.currentFolder?.id)
             return true
         }
@@ -538,24 +538,14 @@ struct ContentView: View {
                        let uuidString = String(data: data, encoding: .utf8),
                        let docID = UUID(uuidString: uuidString) {
                         DispatchQueue.main.async {
-                            viewModel.moveDocument(documentID: docID, to: targetFolderID)
+                            self.viewModel.moveDocument(documentID: docID, to: targetFolderID)
                         }
                         return
                     }
+                    self.handleFileImport(provider: provider, targetFolderID: targetFolderID)
                 }
-            }
-            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
-                    guard let urlData = item as? Data,
-                          let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                    let started = url.startAccessingSecurityScopedResource()
-                    DispatchQueue.main.async {
-                        viewModel.importDocument(fileURL: url, to: targetFolderID)
-                        if started {
-                            url.stopAccessingSecurityScopedResource()
-                        }
-                    }
-                }
+            } else if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                handleFileImport(provider: provider, targetFolderID: targetFolderID)
             } else {
                 _ = provider.loadFileRepresentation(forTypeIdentifier: "public.data") { url, error in
                     guard let url = url else { return }
@@ -568,8 +558,22 @@ struct ContentView: View {
                         url.stopAccessingSecurityScopedResource()
                     }
                     DispatchQueue.main.async {
-                        viewModel.importDocument(fileURL: copyURL, to: targetFolderID)
+                        self.viewModel.importDocument(fileURL: copyURL, to: targetFolderID)
                     }
+                }
+            }
+        }
+    }
+
+    private func handleFileImport(provider: NSItemProvider, targetFolderID: UUID?) {
+        provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
+            guard let urlData = item as? Data,
+                  let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+            let started = url.startAccessingSecurityScopedResource()
+            DispatchQueue.main.async {
+                self.viewModel.importDocument(fileURL: url, to: targetFolderID)
+                if started {
+                    url.stopAccessingSecurityScopedResource()
                 }
             }
         }
@@ -896,7 +900,7 @@ struct FolderRow: View {
         .onTapGesture {
             selection = .folder(node.folder)
         }
-        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+        .onDrop(of: [.fileURL, .plainText], isTargeted: nil) { providers in
             onDropFile(node.folder, providers)
             return true
         }
