@@ -208,123 +208,34 @@ struct ContentView: View {
             Divider()
             List(selection: $sidebarSelection) {
             Section {
-                HStack(spacing: 8) {
-                    Image(systemName: "tray.fill")
-                        .foregroundColor(.accentColor)
-                        .frame(width: 20)
-                    Text("Inbox")
-                        .font(.body)
-                        .fontWeight(viewModel.isShowingInbox ? .medium : .regular)
-                    Spacer()
-                    if viewModel.inboxDocumentCount > 0 {
-                        Text("\(viewModel.inboxDocumentCount)")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-                }
-                .tag(SidebarItem.inbox)
-                .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                    handleDropToFolder(providers: providers, targetFolderID: viewModel.getInboxFolderID())
-                    return true
-                }
-                .contextMenu {
-                    Button(action: { showImportSheet = true }) {
-                        Label("Import Document...", systemImage: "square.and.arrow.down")
-                    }
-                    Divider()
-                    Button(action: { viewModel.refreshDocuments() }) {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                }
-
-                HStack(spacing: 8) {
-                    Image(systemName: viewModel.isShowingFlagged ? "flag.fill" : "flag")
-                        .foregroundColor(.accentColor)
-                        .frame(width: 20)
-                    Text("Flagged")
-                        .font(.body)
-                        .fontWeight(viewModel.isShowingFlagged ? .medium : .regular)
-                    Spacer()
-                    if viewModel.flaggedDocumentCount > 0 {
-                        Text("\(viewModel.flaggedDocumentCount)")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-                }
-                .tag(SidebarItem.flagged)
-                .contextMenu {
-                    Button(action: { viewModel.refreshDocuments() }) {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                }
-
-                HStack(spacing: 8) {
-                    Image(systemName: viewModel.isShowingAllDocuments ? "house.fill" : "house")
-                        .foregroundColor(.accentColor)
-                        .frame(width: 20)
-                    Text("All Documents")
-                        .font(.body)
-                        .fontWeight(viewModel.isShowingAllDocuments ? .medium : .regular)
-                    Spacer()
-                    if viewModel.checkedOutCount > 0 {
-                        Text("\(viewModel.checkedOutCount)")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-                }
-                .tag(SidebarItem.allDocuments)
-                .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                    handleDropToFolder(providers: providers, targetFolderID: nil)
-                    return true
-                }
-                .contextMenu {
-                    Button(action: { showImportSheet = true }) {
-                        Label("Import Document...", systemImage: "square.and.arrow.down")
-                    }
-                    Divider()
-                    Button(action: { startCreateFolder(parentID: nil) }) {
-                        Label("New Folder", systemImage: "folder.badge.plus")
-                    }
-                    Button(action: { viewModel.refreshDocuments() }) {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                }
-
+                Text("Library")
+                    .font(DesignTokens.Typography.labelStyle())
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .padding(.horizontal, DesignTokens.Spacing.md)
+                    .padding(.bottom, DesignTokens.Spacing.xs)
+                
+                sidebarItem(icon: "tray.fill", label: "Inbox", tag: SidebarItem.inbox,
+                    badge: viewModel.inboxDocumentCount > 0 ? "\(viewModel.inboxDocumentCount)" : nil,
+                    badgeColor: .orange,
+                    isSelected: viewModel.isShowingInbox,
+                    onDrop: { handleDropToFolder(providers: $0, targetFolderID: viewModel.getInboxFolderID()) })
+                
+                sidebarItem(icon: "flag.fill", label: "Flagged", tag: SidebarItem.flagged,
+                    badge: viewModel.flaggedDocumentCount > 0 ? "\(viewModel.flaggedDocumentCount)" : nil,
+                    badgeColor: .red,
+                    isSelected: viewModel.isShowingFlagged)
+                
+                sidebarItem(icon: "house.fill", label: "All Documents", tag: SidebarItem.allDocuments,
+                    badge: viewModel.checkedOutCount > 0 ? "\(viewModel.checkedOutCount)" : nil,
+                    badgeColor: .blue,
+                    isSelected: viewModel.isShowingAllDocuments,
+                    onDrop: { handleDropToFolder(providers: $0, targetFolderID: nil) })
+                
                 if viewModel.isShowingAllDocuments {
-                    HStack(spacing: 8) {
-                        Image(systemName: viewModel.isShowingTemplates ? "doc.on.doc.fill" : "doc.on.doc")
-                            .foregroundColor(.accentColor)
-                            .frame(width: 20)
-                        Text("Templates")
-                            .font(.body)
-                            .fontWeight(viewModel.isShowingTemplates ? .medium : .regular)
-                        Spacer()
-                    }
-                    .tag(SidebarItem.templates)
-                    .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                        handleDropToFolder(providers: providers, targetFolderID: viewModel.getTemplatesFolderID())
-                        return true
-                    }
-                    .contextMenu {
-                        Button(action: { viewModel.navigateToTemplates() }) {
-                            Label("Show Templates", systemImage: "doc.on.doc")
-                        }
-                        Button(action: { startCreateFolder(parentID: viewModel.getTemplatesFolderID()) }) {
-                            Label("New Template Folder", systemImage: "folder.badge.plus")
-                        }
-                    }
+                    sidebarItem(icon: "doc.on.doc.fill", label: "Templates", tag: SidebarItem.templates,
+                        isSelected: viewModel.isShowingTemplates)
                 }
             }
 
@@ -452,19 +363,77 @@ struct ContentView: View {
     }
 
     private var appBranding: some View {
-        HStack(spacing: 8) {
-            Image(pdfNamed: "PandaHead")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 24, height: 24)
+        HStack(spacing: DesignTokens.Spacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: DesignTokens.Corner.md)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 0.2, green: 0.2, blue: 0.2), Color(red: 0.33, green: 0.33, blue: 0.33)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 24, height: 24)
+                
+                Image(systemName: "pawprint.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+            }
+            
             Text("PandyDoc")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.title3.weight(.bold))
+                .tracking(-0.2)
+            
             Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+    }
+
+    private func sidebarItem(
+        icon: String,
+        label: String,
+        tag: SidebarItem,
+        badge: String? = nil,
+        badgeColor: Color = .accentColor,
+        isSelected: Bool = false,
+        onDrop: (([NSItemProvider]) -> Void)? = nil
+    ) -> some View {
+        HStack(spacing: DesignTokens.Spacing.sm) {
+            Image(systemName: icon)
+                .foregroundColor(.accentColor)
+                .frame(width: 20)
+            Text(label)
+                .font(.body)
+                .fontWeight(isSelected ? .medium : .regular)
+            Spacer()
+            if let badge {
+                Text(badge)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(badgeColor)
+                    .padding(.horizontal, DesignTokens.Spacing.xs)
+                    .padding(.vertical, 1)
+                    .background(badgeColor.opacity(0.15))
+                    .cornerRadius(DesignTokens.Corner.sm)
+            }
+        }
+        .tag(tag)
+        .padding(.horizontal, DesignTokens.Spacing.sm)
+        .padding(.vertical, DesignTokens.Spacing.xs)
+        .contentShape(Rectangle())
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            onDrop?(providers)
+            return true
+        }
+        .contextMenu {
+            Button(action: { showImportSheet = true }) {
+                Label("Import Document...", systemImage: "square.and.arrow.down")
+            }
+            Divider()
+            Button(action: { viewModel.refreshDocuments() }) {
+                Label("Refresh", systemImage: "arrow.clockwise")
+            }
+        }
     }
 
     @FocusState private var folderFieldFocused: Bool
@@ -1184,279 +1153,6 @@ struct FolderMoveTargetRow: View {
         self._selectedParent = selectedParent
         self.folderToMove = folderToMove
         self._depth = State(initialValue: depth)
-    }
-}
-
-struct HelpSheetView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    helpSection(
-                        title: "Getting Started",
-                        icon: "sparkles",
-                        content: [
-                            "Import documents by clicking the Import button or dragging files into PandyDoc",
-                            "Create folders to organize your documents using the + button in the sidebar",
-                            "Right-click on any folder or document for additional options",
-                            "Select a document to preview it in the right panel"
-                        ]
-                    )
-
-                    helpSection(
-                        title: "Document Management",
-                        icon: "doc.text",
-                        content: [
-                            "Check Out a document to edit it - a working copy opens in the default app",
-                            "Save your changes and Check In to create a new version",
-                            "Lock documents to prevent others from editing",
-                            "View version history to see all changes and restore previous versions",
-                            "Export documents to save a copy outside PandyDoc"
-                        ]
-                    )
-
-                    helpSection(
-                        title: "Templates",
-                        icon: "doc.on.doc",
-                        content: [
-                            "Add any document to Templates for reuse",
-                            "Create new documents from templates with a single click",
-                            "Templates are stored in a special Templates folder"
-                        ]
-                    )
-
-                    helpSection(
-                        title: "Print to PandyDoc",
-                        icon: "printer",
-                        content: [
-                            "Install the PDF Service from Printer Setup to add 'Save to PandyDoc' to print dialogs",
-                            "From any app, press Cmd+P and select 'Save to PandyDoc' from the PDF menu",
-                            "The PDF will be saved directly to your PandyDoc library"
-                        ]
-                    )
-
-                    helpSection(
-                        title: "Folder Organization",
-                        icon: "folder",
-                        content: [
-                            "Create nested folder structures for better organization",
-                            "Right-click folders to create subfolders, rename, move, or archive",
-                            "Drag and drop documents directly onto folders to import them",
-                            "Protect folders to prevent accidental deletion"
-                        ]
-                    )
-
-                    helpSection(
-                        title: "Supported Formats",
-                        icon: "doc.text.magnifyingglass",
-                        content: [
-                            "PDF - Native preview with PDFKit",
-                            "Pages, Numbers, Keynote - QuickLook preview",
-                            "Word (DOCX), PowerPoint (PPTX), Excel (XLSX) - QuickLook preview",
-                            "Text (TXT) and Rich Text (RTF) - QuickLook preview"
-                        ]
-                    )
-                }
-                .padding()
-            }
-            .navigationTitle("PandyDoc Help")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-        .frame(width: 520, height: 520)
-    }
-
-    private func helpSection(title: String, icon: String, content: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundColor(.accentColor)
-                Text(title)
-                    .font(.headline)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(content, id: \.self) { item in
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "circle.fill")
-                            .font(.system(size: 4))
-                            .foregroundColor(.secondary)
-                            .padding(.top, 6)
-                        Text(item)
-                            .font(.body)
-                            .foregroundColor(.primary)
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct GettingStartedSheetView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Image(systemName: "pawprint.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(.accentColor)
-                        Text("Welcome to PandyDoc")
-                            .font(.title)
-                            .fontWeight(.bold)
-                        Text("Your document management system for macOS")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Divider()
-
-                    GettingStartedStep(
-                        number: 1,
-                        title: "Import Your Documents",
-                        description: "Click Import or drag files into PandyDoc. You can also import entire folders.",
-                        shortcut: "Cmd+I"
-                    )
-
-                    GettingStartedStep(
-                        number: 2,
-                        title: "Organize with Folders",
-                        description: "Create folders and subfolders to keep your documents organized. Right-click any folder for more options.",
-                        shortcut: nil
-                    )
-
-                    GettingStartedStep(
-                        number: 3,
-                        title: "Check Out & Edit",
-                        description: "Right-click a document and select Check Out. It opens in your default app for editing.",
-                        shortcut: nil
-                    )
-
-                    GettingStartedStep(
-                        number: 4,
-                        title: "Check In Changes",
-                        description: "When done editing, check in the document to save a new version with optional notes.",
-                        shortcut: "Cmd+Shift+S"
-                    )
-
-                    GettingStartedStep(
-                        number: 5,
-                        title: "Print from Any App",
-                        description: "Install the PDF Service in Printer Setup, then select 'Save to PandyDoc' from the PDF menu in any print dialog.",
-                        shortcut: nil
-                    )
-                }
-                .padding()
-            }
-            .navigationTitle("Getting Started")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-        .frame(width: 480, height: 520)
-    }
-}
-
-struct GettingStartedStep: View {
-    let number: Int
-    let title: String
-    let description: String
-    let shortcut: String?
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.15))
-                    .frame(width: 36, height: 36)
-                Text("\(number)")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.accentColor)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(title)
-                        .font(.headline)
-                    if let shortcut = shortcut {
-                        Text(shortcut)
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15))
-                            .cornerRadius(4)
-                    }
-                }
-                Text(description)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-}
-
-struct KeyboardShortcutsSheetView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("File Operations") {
-                    ShortcutRow(action: "Import Document", shortcut: "Cmd+I")
-                    ShortcutRow(action: "Import Folder", shortcut: "Cmd+Opt+I")
-                    ShortcutRow(action: "Check In Document", shortcut: "Cmd+Shift+S")
-                }
-
-                Section("Navigation") {
-                    ShortcutRow(action: "Show All Documents", shortcut: "Cmd+1")
-                    ShortcutRow(action: "Show Templates", shortcut: "Cmd+2")
-                    ShortcutRow(action: "Toggle Sidebar", shortcut: "Cmd+Opt+0")
-                }
-
-                Section("Help") {
-                    ShortcutRow(action: "Open Help", shortcut: "Cmd+?")
-                }
-            }
-            .formStyle(.grouped)
-            .navigationTitle("Keyboard Shortcuts")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-        .frame(width: 400, height: 340)
-    }
-}
-
-struct ShortcutRow: View {
-    let action: String
-    let shortcut: String
-
-    var body: some View {
-        HStack {
-            Text(action)
-            Spacer()
-            Text(shortcut)
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Color.secondary.opacity(0.15))
-                .cornerRadius(4)
-                .monospacedDigit()
-        }
     }
 }
 
