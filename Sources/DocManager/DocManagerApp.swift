@@ -3,10 +3,14 @@ import SwiftUI
 @main
 struct DocManagerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var showAbout = false
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .sheet(isPresented: $showAbout) {
+                    AboutView()
+                }
         }
         .windowStyle(.automatic)
         .windowToolbarStyle(.unified(showsTitle: true))
@@ -93,7 +97,7 @@ struct DocManagerApp: App {
                 Divider()
 
                 Button("About PandyDoc") {
-                    NSApp.orderFrontStandardAboutPanel(nil)
+                    showAbout = true
                 }
             }
         }
