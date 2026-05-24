@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90D9"/>
+      <stop offset="100%" style="stop-color:#2C5F8A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="512" fill="url(#bg)"/>
+  
+  <!-- Rounder, wider head -->
+  <ellipse cx="512" cy="520" rx="340" ry="320" fill="white"/>
+  
+  <!-- Bigger, fluffier ears -->
+  <circle cx="300" cy="320" r="110" fill="#1a1a1a"/>
+  <circle cx="300" cy="320" r="60" fill="#333"/>
+  <circle cx="724" cy="320" r="110" fill="#1a1a1a"/>
+  <circle cx="724" cy="320" r="60" fill="#333"/>
+  
+  <!-- Larger, more dramatic eye patches -->
+  <ellipse cx="400" cy="500" rx="120" ry="90" fill="#1a1a1a" transform="rotate(-15 400 500)"/>
+  <ellipse cx="624" cy="500" rx="120" ry="90" fill="#1a1a1a" transform="rotate(15 624 500)"/>
+  
+  <!-- Bigger eyes -->
+  <circle cx="400" cy="490" r="50" fill="white"/>
+  <circle cx="624" cy="490" r="50" fill="white"/>
+  <circle cx="410" cy="485" r="28" fill="#1a1a1a"/>
+  <circle cx="634" cy="485" r="28" fill="#1a1a1a"/>
+  <circle cx="418" cy="475" r="12" fill="white"/>
+  <circle cx="642" cy="475" r="12" fill="white"/>
+  
+  <!-- Wider, cuter nose -->
+  <ellipse cx="512" cy="600" rx="40" ry="28" fill="#1a1a1a"/>
+  <ellipse cx="512" cy="595" rx="15" ry="8" fill="#333" opacity="0.5"/>
+  
+  <!-- Bigger smile -->
+  <path d="M460 645 Q512 700 564 645" stroke="#1a1a1a" stroke-width="12" fill="none" stroke-linecap="round"/>
+  
+  <!-- Pink cheeks -->
+  <circle cx="330" cy="620" r="40" fill="#FFB6C1" opacity="0.5"/>
+  <circle cx="694" cy="620" r="40" fill="#FFB6C1" opacity="0.5"/>
+</svg>
