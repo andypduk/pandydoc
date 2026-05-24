@@ -27,7 +27,7 @@ let package = Package(
             ],
             path: "Sources/DocManager",
             resources: [
-                .copy("../../Resources/PandaIcon.icns")
+                .copy("../../Resources/PandaHead.icns")
             ],
             linkerSettings: [
                 .linkedFramework("AppKit")
