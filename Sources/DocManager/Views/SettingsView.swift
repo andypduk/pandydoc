@@ -234,10 +234,8 @@ struct SettingsView: View {
     }
 
     var apiSettings: some View {
-        VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("API Key")
-                    .font(.headline)
+        Form {
+            Section("API Key") {
                 HStack {
                     Text(showApiKey ? APIKeyManager.shared.apiKey : String(repeating: "•", count: 64))
                         .font(.system(.body, design: .monospaced))
@@ -248,21 +246,17 @@ struct SettingsView: View {
                         NSPasteboard.general.setString(APIKeyManager.shared.apiKey, forType: .string)
                     }
                 }
+
+                Button("Regenerate Key", role: .destructive) { showRegenerateAlert = true }
+                    .alert("Regenerate API Key?", isPresented: $showRegenerateAlert) {
+                        Button("Regenerate", role: .destructive) { _ = APIKeyManager.shared.regenerateKey(); showApiKey = false }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("The current key will stop working immediately.")
+                    }
             }
 
-            Button("Regenerate Key", role: .destructive) { showRegenerateAlert = true }
-                .alert("Regenerate API Key?", isPresented: $showRegenerateAlert) {
-                    Button("Regenerate", role: .destructive) { _ = APIKeyManager.shared.regenerateKey(); showApiKey = false }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("The current key will stop working immediately.")
-                }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Server")
-                    .font(.headline)
+            Section("Server") {
                 HStack {
                     Text("Status:")
                     Text(APIServer.shared.isRunning ? "Running" : "Stopped")
@@ -278,6 +272,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+
                 HStack {
                     Text("Port:")
                     TextField("Port", value: $apiPort, formatter: NumberFormatter())
@@ -286,6 +281,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .formStyle(.grouped)
         .padding()
     }
 
