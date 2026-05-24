@@ -14,6 +14,10 @@ let package = Package(
         .executable(
             name: "SaveToPandyDoc",
             targets: ["SaveToPandyDoc"]
+        ),
+        .executable(
+            name: "APITestCLI",
+            targets: ["APITestCLI"]
         )
     ],
     dependencies: [
@@ -56,6 +60,11 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("AppKit")
             ]
+        ),
+        .executableTarget(
+            name: "APITestCLI",
+            dependencies: [],
+            path: "Sources/APITestCLI"
         )
     ]
 )
