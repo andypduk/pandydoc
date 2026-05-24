@@ -131,6 +131,29 @@ final class DatabaseManager {
         try? db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     }
 
+    func vacuum() throws {
+        checkpoint()
+        guard let db else { throw DatabaseError.connectionFailed }
+        try db.execute("VACUUM")
+    }
+
+    func databaseSize() -> Int64 {
+        let fileManager = FileManager.default
+        var size: Int64 = 0
+        if fileManager.fileExists(atPath: dbURL.path) {
+            size += (try? fileManager.attributesOfItem(atPath: dbURL.path)[.size] as? Int64) ?? 0
+        }
+        let walURL = URL(fileURLWithPath: dbURL.path + "-wal")
+        if fileManager.fileExists(atPath: walURL.path) {
+            size += (try? fileManager.attributesOfItem(atPath: walURL.path)[.size] as? Int64) ?? 0
+        }
+        let shmURL = URL(fileURLWithPath: dbURL.path + "-shm")
+        if fileManager.fileExists(atPath: shmURL.path) {
+            size += (try? fileManager.attributesOfItem(atPath: shmURL.path)[.size] as? Int64) ?? 0
+        }
+        return size
+    }
+
     func eraseAll() throws {
         close()
         let walURL = URL(fileURLWithPath: dbURL.path + "-wal")

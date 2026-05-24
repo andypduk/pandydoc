@@ -181,7 +181,20 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Database Size") {
+                HStack {
+                    Text("Current size")
+                    Spacer()
+                    Text(formatSize(dbManager.databaseSize()))
+                        .foregroundColor(.secondary)
+                }
+            }
+
             Section("Actions") {
+                Button(action: { compressDatabase() }) {
+                    Label("Compress Database", systemImage: "arrow.down.bin")
+                }
+
                 Button(action: { backupDatabase() }) {
                     Label("Back Up Database...", systemImage: "arrow.up.doc")
                 }
@@ -198,6 +211,30 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private func compressDatabase() {
+        do {
+            let beforeSize = dbManager.databaseSize()
+            try dbManager.vacuum()
+            let afterSize = dbManager.databaseSize()
+            let saved = beforeSize - afterSize
+            if saved > 0 {
+                statusMessage = "Database compressed. Freed \(formatSize(saved))."
+            } else {
+                statusMessage = "Database is already optimized. No space freed."
+            }
+            showStatus = true
+        } catch {
+            statusMessage = "Compression failed: \(error.localizedDescription)"
+            showStatus = true
+        }
+    }
+
+    private func formatSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 
     private func backupDatabase() {
