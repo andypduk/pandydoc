@@ -1,5 +1,6 @@
 import Foundation
 import SQLite
+import SQLite3
 
 typealias SQLiteExpression<T> = SQLite.Expression<T>
 
@@ -7,6 +8,8 @@ enum DatabaseError: Error, LocalizedError {
     case connectionFailed
     case migrationFailed(String)
     case queryFailed(String)
+    case backupFailed(String)
+    case restoreFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -16,6 +19,10 @@ enum DatabaseError: Error, LocalizedError {
             return "Database migration failed: \(msg)"
         case .queryFailed(let msg):
             return "Database query failed: \(msg)"
+        case .backupFailed(let msg):
+            return "Database backup failed: \(msg)"
+        case .restoreFailed(let msg):
+            return "Database restore failed: \(msg)"
         }
     }
 }
@@ -615,5 +622,145 @@ final class DatabaseManager {
     func moveDocument(db: Connection, documentID: UUID, to folderID: UUID?) throws {
         let doc = documents.filter(id == documentID.uuidString)
         try db.run(doc.update(parentIDCol <- folderID?.uuidString))
+    }
+    
+    func integrityCheck() throws -> String {
+        guard let db else { throw DatabaseError.connectionFailed }
+        let stmt = try db.prepare("PRAGMA integrity_check")
+        for row in stmt {
+            return row[0] as? String ?? "unknown"
+        }
+        return "unknown"
+    }
+    
+    func quickCheck() throws -> String {
+        guard let db else { throw DatabaseError.connectionFailed }
+        let stmt = try db.prepare("PRAGMA quick_check")
+        for row in stmt {
+            return row[0] as? String ?? "unknown"
+        }
+        return "unknown"
+    }
+    
+    func foreignKeyCheck() throws -> [(table: String, rowid: Int64, parent: String, fkid: Int)] {
+        guard let db else { throw DatabaseError.connectionFailed }
+        let rows = try db.prepare("PRAGMA foreign_key_check")
+        var results: [(table: String, rowid: Int64, parent: String, fkid: Int)] = []
+        for row in rows {
+            let table = row[0] as? String ?? "unknown"
+            let rowid = row[1] as? Int64 ?? 0
+            let parent = row[2] as? String ?? "unknown"
+            let fkid = row[3] as? Int ?? 0
+            results.append((table: table, rowid: rowid, parent: parent, fkid: fkid))
+        }
+        return results
+    }
+    
+    func optimize() throws {
+        guard let db else { throw DatabaseError.connectionFailed }
+        try db.execute("PRAGMA optimize")
+    }
+    
+    func liveBackup(to destinationDir: URL) throws {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: dbURL.path) else {
+            throw DatabaseError.backupFailed("Database file does not exist")
+        }
+        guard let db else { throw DatabaseError.connectionFailed }
+        
+        try fileManager.createDirectory(at: destinationDir, withIntermediateDirectories: true)
+        let destDBURL = destinationDir.appendingPathComponent("pandydoc.sqlite3")
+        
+        var destHandle: OpaquePointer?
+        let openResult = sqlite3_open_v2(destDBURL.path, &destHandle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil)
+        guard openResult == SQLITE_OK, let destHandle else {
+            throw DatabaseError.backupFailed("Could not create backup database")
+        }
+        defer { sqlite3_close(destHandle) }
+        
+        let backup = sqlite3_backup_init(destHandle, "main", db.handle, "main")
+        guard let backup else {
+            let errMsg = String(cString: sqlite3_errmsg(destHandle))
+            throw DatabaseError.backupFailed(errMsg)
+        }
+        
+        let stepResult = sqlite3_backup_step(backup, -1)
+        sqlite3_backup_finish(backup)
+        
+        guard stepResult == SQLITE_DONE else {
+            let errMsg = String(cString: sqlite3_errmsg(destHandle))
+            throw DatabaseError.backupFailed("Backup step failed: \(errMsg)")
+        }
+        
+        let documentsSrc = documentsURL
+        if fileManager.fileExists(atPath: documentsSrc.path) {
+            let documentsDest = destinationDir.appendingPathComponent("Documents", isDirectory: true)
+            if fileManager.fileExists(atPath: documentsDest.path) {
+                try fileManager.removeItem(at: documentsDest)
+            }
+            try fileManager.copyItem(at: documentsSrc, to: documentsDest)
+        }
+        
+        let versionsSrc = versionsURL
+        if fileManager.fileExists(atPath: versionsSrc.path) {
+            let versionsDest = destinationDir.appendingPathComponent("Versions", isDirectory: true)
+            if fileManager.fileExists(atPath: versionsDest.path) {
+                try fileManager.removeItem(at: versionsDest)
+            }
+            try fileManager.copyItem(at: versionsSrc, to: versionsDest)
+        }
+    }
+    
+    func backupToiCloudDrive() throws -> URL? {
+        guard let iCloudRoot = FileManager.default.url(forUbiquityContainerIdentifier: nil) else {
+            return nil
+        }
+        let backupDir = iCloudRoot.appendingPathComponent("Backups", isDirectory: true)
+        try liveBackup(to: backupDir)
+        return backupDir
+    }
+    
+    func restore(from backupDir: URL) throws {
+        let fileManager = FileManager.default
+        let backupDBURL = backupDir.appendingPathComponent("pandydoc.sqlite3")
+        guard fileManager.fileExists(atPath: backupDBURL.path) else {
+            throw DatabaseError.restoreFailed("Backup database file does not exist")
+        }
+        close()
+        let walURL = URL(fileURLWithPath: dbURL.path + "-wal")
+        let shmURL = URL(fileURLWithPath: dbURL.path + "-shm")
+        let backupWalURL = URL(fileURLWithPath: backupDBURL.path + "-wal")
+        let backupShmURL = URL(fileURLWithPath: backupDBURL.path + "-shm")
+        for url in [dbURL, walURL, shmURL] {
+            if fileManager.fileExists(atPath: url.path) {
+                try fileManager.removeItem(at: url)
+            }
+        }
+        do {
+            try fileManager.copyItem(at: backupDBURL, to: dbURL)
+            if fileManager.fileExists(atPath: backupWalURL.path) {
+                try fileManager.copyItem(at: backupWalURL, to: URL(fileURLWithPath: dbURL.path + "-wal"))
+            }
+            if fileManager.fileExists(atPath: backupShmURL.path) {
+                try fileManager.copyItem(at: backupShmURL, to: URL(fileURLWithPath: dbURL.path + "-shm"))
+            }
+        } catch {
+            throw DatabaseError.restoreFailed(error.localizedDescription)
+        }
+        let backupDocuments = backupDir.appendingPathComponent("Documents", isDirectory: true)
+        if fileManager.fileExists(atPath: backupDocuments.path) {
+            if fileManager.fileExists(atPath: documentsURL.path) {
+                try fileManager.removeItem(at: documentsURL)
+            }
+            try fileManager.copyItem(at: backupDocuments, to: documentsURL)
+        }
+        let backupVersions = backupDir.appendingPathComponent("Versions", isDirectory: true)
+        if fileManager.fileExists(atPath: backupVersions.path) {
+            if fileManager.fileExists(atPath: versionsURL.path) {
+                try fileManager.removeItem(at: versionsURL)
+            }
+            try fileManager.copyItem(at: backupVersions, to: versionsURL)
+        }
+        try connect()
     }
 }

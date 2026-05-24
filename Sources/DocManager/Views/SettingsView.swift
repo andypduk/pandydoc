@@ -12,9 +12,15 @@ struct SettingsView: View {
     @State private var showNewDatabaseConfirmation = false
     @State private var statusMessage: String?
     @State private var showStatus = false
+    @State private var showBackupSheet = false
+    @State private var isICloudAvailable = false
 
     private let dbManager = DatabaseManager.shared
     private let fileManager = FileManager.default
+
+    init() {
+        isICloudAvailable = FileManager.default.url(forUbiquityContainerIdentifier: nil) != nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -195,7 +201,7 @@ struct SettingsView: View {
                     Label("Compress Database", systemImage: "arrow.down.bin")
                 }
 
-                Button(action: { backupDatabase() }) {
+                Button(action: { showBackupSheet = true }) {
                     Label("Back Up Database...", systemImage: "arrow.up.doc")
                 }
 
@@ -211,6 +217,9 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+        .sheet(isPresented: $showBackupSheet) {
+            BackupSheet(isICloudAvailable: isICloudAvailable, statusMessage: $statusMessage, showStatus: $showStatus)
+        }
     }
 
     private func compressDatabase() {
@@ -237,55 +246,6 @@ struct SettingsView: View {
         return formatter.string(fromByteCount: bytes)
     }
 
-    private func backupDatabase() {
-        let savePanel = NSSavePanel()
-        savePanel.title = "Back Up Database"
-        savePanel.nameFieldStringValue = "PandyDoc Backup \(dateString())"
-        savePanel.prompt = "Back Up"
-        savePanel.canCreateDirectories = true
-
-        savePanel.begin { response in
-            guard response == .OK, let destURL = savePanel.url else { return }
-            do {
-                dbManager.checkpoint()
-                let backupDir = destURL
-                try fileManager.createDirectory(at: backupDir, withIntermediateDirectories: true)
-
-                if fileManager.fileExists(atPath: dbManager.databaseURL.path) {
-                    let dbDest = backupDir.appendingPathComponent("pandydoc.sqlite3")
-                    if fileManager.fileExists(atPath: dbDest.path) {
-                        try fileManager.removeItem(at: dbDest)
-                    }
-                    try fileManager.copyItem(at: dbManager.databaseURL, to: dbDest)
-                }
-
-                let documentsSrc = dbManager.documentsURL
-                if fileManager.fileExists(atPath: documentsSrc.path) {
-                    let documentsDest = backupDir.appendingPathComponent("Documents", isDirectory: true)
-                    if fileManager.fileExists(atPath: documentsDest.path) {
-                        try fileManager.removeItem(at: documentsDest)
-                    }
-                    try fileManager.copyItem(at: documentsSrc, to: documentsDest)
-                }
-
-                let versionsSrc = dbManager.versionsURL
-                if fileManager.fileExists(atPath: versionsSrc.path) {
-                    let versionsDest = backupDir.appendingPathComponent("Versions", isDirectory: true)
-                    if fileManager.fileExists(atPath: versionsDest.path) {
-                        try fileManager.removeItem(at: versionsDest)
-                    }
-                    try fileManager.copyItem(at: versionsSrc, to: versionsDest)
-                }
-
-                statusMessage = "Database backed up successfully."
-                showStatus = true
-            } catch {
-                statusMessage = "Backup failed: \(error.localizedDescription)"
-                showStatus = true
-            }
-        }
-    }
-
     private func eraseAllData() {
         do {
             try dbManager.eraseAll()
@@ -301,7 +261,152 @@ struct SettingsView: View {
     private func revealInFinder() {
         NSWorkspace.shared.activateFileViewerSelecting([dbManager.databaseURL])
     }
+}
 
+struct BackupSheet: View {
+    let isICloudAvailable: Bool
+    @Binding var statusMessage: String?
+    @Binding var showStatus: Bool
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var isBackingUp = false
+    @State private var backupProgress: String = ""
+    
+    private let dbManager = DatabaseManager.shared
+    private let fileManager = FileManager.default
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "externaldrive.fill.badge.arrow.up")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+                Text("Back Up Database")
+                    .font(.headline)
+                Spacer()
+            }
+            
+            Text("Choose where to save your backup. The backup includes the database, documents, and version history.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+            
+            VStack(spacing: 12) {
+                Button(action: { backupToLocalLocation() }) {
+                    Label("Choose Location...", systemImage: "folder")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                
+                if isICloudAvailable {
+                    Button(action: { backupToICloud() }) {
+                        Label("Back Up to iCloud Drive", systemImage: "icloud")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                } else {
+                    Button(action: {}) {
+                        Label("iCloud Not Configured", systemImage: "icloud.slash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(true)
+                    
+                    Text("Enable iCloud Drive in System Settings > Apple ID > iCloud to back up here.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
+            if isBackingUp {
+                ProgressView(backupProgress)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            
+            Spacer()
+            
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    dismiss()
+                }
+                .keyboardShortcut(.escape)
+            }
+        }
+        .padding()
+        .frame(width: 360, height: isICloudAvailable ? 300 : 340)
+        .alert(statusMessage ?? "", isPresented: $showStatus) {
+            Button("OK") { dismiss() }
+        }
+    }
+    
+    private func backupToLocalLocation() {
+        let savePanel = NSSavePanel()
+        savePanel.title = "Choose Backup Location"
+        savePanel.nameFieldStringValue = "PandyDoc Backup \(dateString())"
+        savePanel.prompt = "Back Up"
+        savePanel.canCreateDirectories = true
+        savePanel.canSelectHiddenExtension = true
+        savePanel.isExtensionHidden = false
+        
+        savePanel.begin { response in
+            guard response == .OK, let destURL = savePanel.url else { return }
+            performBackup(to: destURL)
+        }
+    }
+    
+    private func backupToICloud() {
+        isBackingUp = true
+        backupProgress = "Backing up to iCloud Drive..."
+        
+        Task.detached {
+            do {
+                let result = try dbManager.backupToiCloudDrive()
+                await MainActor.run {
+                    isBackingUp = false
+                    if let result {
+                        statusMessage = "Backed up to iCloud Drive: \(result.path)"
+                    } else {
+                        statusMessage = "iCloud Drive is not available."
+                    }
+                    showStatus = true
+                }
+            } catch {
+                await MainActor.run {
+                    isBackingUp = false
+                    statusMessage = "Backup failed: \(error.localizedDescription)"
+                    showStatus = true
+                }
+            }
+        }
+    }
+    
+    private func performBackup(to destURL: URL) {
+        isBackingUp = true
+        backupProgress = "Creating backup..."
+        
+        Task.detached {
+            do {
+                try dbManager.liveBackup(to: destURL)
+                await MainActor.run {
+                    isBackingUp = false
+                    statusMessage = "Database backed up successfully."
+                    showStatus = true
+                }
+            } catch {
+                await MainActor.run {
+                    isBackingUp = false
+                    statusMessage = "Backup failed: \(error.localizedDescription)"
+                    showStatus = true
+                }
+            }
+        }
+    }
+    
     private func dateString() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
