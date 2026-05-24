@@ -33,10 +33,6 @@ enum HelpTab: Int, CaseIterable, Identifiable {
     }
 }
 
-extension Notification.Name {
-    static let showHelpWithTab = Notification.Name("showHelpWithTab")
-}
-
 struct HelpView: View {
     @State private var selectedTab: HelpTab = .gettingStarted
     var initialTab: HelpTab?

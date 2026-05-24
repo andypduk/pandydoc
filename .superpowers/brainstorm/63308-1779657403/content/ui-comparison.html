@@ -1,0 +1,205 @@
+<div class="section">
+  <h2>Apple-Native Refined: Current vs Proposed</h2>
+  <p class="subtitle">Click on each version to compare. The proposed design uses macOS Sonoma/Ventura patterns: vibrancy materials, refined typography, smooth animations, and card-based document rows.</p>
+</div>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Current UI</div>
+    <div class="mockup-body" style="background: #f5f5f7; padding: 0; font-family: -apple-system, sans-serif; font-size: 11px;">
+      <!-- Sidebar -->
+      <div style="display: flex; height: 280px;">
+        <div style="width: 160px; background: #e8e8ed; padding: 12px 8px; border-right: 1px solid #d1d1d6;">
+          <div style="display: flex; align-items: center; gap: 6px; padding: 6px; margin-bottom: 12px;">
+            <div style="width: 20px; height: 20px; background: #333; border-radius: 4px;"></div>
+            <span style="font-weight: 600; font-size: 13px;">PandyDoc</span>
+          </div>
+          <div style="padding: 4px 6px; background: #d1d1d6; border-radius: 4px; margin-bottom: 2px; font-size: 12px;">📁 Inbox</div>
+          <div style="padding: 4px 6px; margin-bottom: 2px; font-size: 12px;">📁 Flagged</div>
+          <div style="padding: 4px 6px; margin-bottom: 2px; font-size: 12px;">📄 All Documents</div>
+          <div style="padding: 4px 6px; margin-bottom: 2px; font-size: 12px;">📋 Templates</div>
+          <div style="padding: 4px 6px; margin-bottom: 2px; font-size: 12px;">📁 Projects</div>
+          <div style="padding: 4px 6px; padding-left: 16px; margin-bottom: 2px; font-size: 12px; color: #888;">└ Reports</div>
+        </div>
+        <!-- Document List -->
+        <div style="width: 240px; background: white; border-right: 1px solid #d1d1d6; padding: 0;">
+          <div style="padding: 8px 12px; border-bottom: 1px solid #e5e5ea; font-size: 11px; color: #888;">Documents</div>
+          <div style="padding: 6px 12px; border-bottom: 1px solid #f2f2f7; display: flex; align-items: center; gap: 6px;">
+            <span style="color: #007aff;">📄</span>
+            <span style="flex: 1; font-size: 12px;">Annual Report.pdf</span>
+            <span style="width: 6px; height: 6px; background: #34c759; border-radius: 50%;"></span>
+          </div>
+          <div style="padding: 6px 12px; border-bottom: 1px solid #f2f2f7; display: flex; align-items: center; gap: 6px; background: #e5e5ea;">
+            <span style="color: #007aff;">📄</span>
+            <span style="flex: 1; font-size: 12px; font-weight: 600;">Budget 2026.xlsx</span>
+            <span style="width: 6px; height: 6px; background: #007aff; border-radius: 50%;"></span>
+          </div>
+          <div style="padding: 6px 12px; border-bottom: 1px solid #f2f2f7; display: flex; align-items: center; gap: 6px;">
+            <span style="color: #007aff;">📄</span>
+            <span style="flex: 1; font-size: 12px;">Meeting Notes.docx</span>
+            <span style="width: 6px; height: 6px; background: #ff9500; border-radius: 50%;"></span>
+          </div>
+          <div style="padding: 6px 12px; border-bottom: 1px solid #f2f2f7; display: flex; align-items: center; gap: 6px;">
+            <span style="color: #007aff;">📄</span>
+            <span style="flex: 1; font-size: 12px;">Presentation.pptx</span>
+            <span style="width: 6px; height: 6px; background: #34c759; border-radius: 50%;"></span>
+          </div>
+        </div>
+        <!-- Detail -->
+        <div style="flex: 1; background: white; padding: 16px;">
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button style="padding: 4px 8px; border: 1px solid #d1d1d6; border-radius: 4px; background: white; font-size: 11px;">🔍</button>
+            <button style="padding: 4px 8px; border: 1px solid #d1d1d6; border-radius: 4px; background: white; font-size: 11px;">✏️</button>
+            <button style="padding: 4px 8px; border: 1px solid #d1d1d6; border-radius: 4px; background: white; font-size: 11px;">📤</button>
+          </div>
+          <div style="padding: 8px; background: #f2f2f7; border-radius: 6px; margin-bottom: 12px;">
+            <div style="font-size: 10px; color: #888; margin-bottom: 4px;">Tags</div>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <span style="padding: 2px 6px; background: rgba(0,122,255,0.15); border-radius: 10px; font-size: 10px;">finance</span>
+              <span style="padding: 2px 6px; background: rgba(0,122,255,0.15); border-radius: 10px; font-size: 10px;">2026</span>
+            </div>
+          </div>
+          <div style="height: 120px; background: #e5e5ea; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px;">PDF Preview</div>
+          <div style="margin-top: 12px; font-size: 10px; color: #888; display: flex; justify-content: space-between;">
+            <span>v3 · Modified 2 hours ago</span>
+            <span>🔒 Checked out</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Proposed: Apple-Native Refined</div>
+    <div class="mockup-body" style="background: linear-gradient(180deg, #f5f5f7 0%, #e8e8ed 100%); padding: 0; font-family: -apple-system, sans-serif; font-size: 11px;">
+      <div style="display: flex; height: 280px;">
+        <!-- Sidebar with vibrancy -->
+        <div style="width: 180px; background: rgba(232,232,237,0.85); backdrop-filter: blur(20px); padding: 16px 10px; border-right: 0.5px solid rgba(0,0,0,0.1);">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px; margin-bottom: 16px;">
+            <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #333 0%, #555 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">🐼</div>
+            <span style="font-weight: 700; font-size: 14px; letter-spacing: -0.2px;">PandyDoc</span>
+          </div>
+          <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; padding: 0 6px; margin-bottom: 6px;">Library</div>
+          <div style="padding: 6px 8px; background: rgba(0,122,255,0.1); border-radius: 6px; margin-bottom: 2px; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+            <span style="opacity: 0.7;">📁</span> Inbox <span style="margin-left: auto; background: rgba(0,122,255,0.2); padding: 1px 5px; border-radius: 8px; font-size: 10px;">3</span>
+          </div>
+          <div style="padding: 6px 8px; margin-bottom: 2px; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+            <span style="opacity: 0.7;">⭐</span> Flagged
+          </div>
+          <div style="padding: 6px 8px; margin-bottom: 2px; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+            <span style="opacity: 0.7;">📄</span> All Documents
+          </div>
+          <div style="padding: 6px 8px; margin-bottom: 2px; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+            <span style="opacity: 0.7;">📋</span> Templates
+          </div>
+          <div style="margin-top: 16px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; padding: 0 6px; margin-bottom: 6px;">Folders</div>
+          <div style="padding: 6px 8px; margin-bottom: 2px; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+            <span style="opacity: 0.7;">📁</span> Projects
+          </div>
+          <div style="padding: 6px 8px; padding-left: 20px; margin-bottom: 2px; font-size: 12px; color: #888; display: flex; align-items: center; gap: 6px;">
+            <span style="opacity: 0.5;">└</span> Reports
+          </div>
+        </div>
+        <!-- Refined Document List -->
+        <div style="width: 280px; background: rgba(255,255,255,0.9); border-right: 0.5px solid rgba(0,0,0,0.08);">
+          <div style="padding: 12px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-weight: 600; font-size: 13px;">Documents</span>
+            <span style="font-size: 11px; color: #888;">24 items</span>
+          </div>
+          <!-- Document card - selected -->
+          <div style="padding: 10px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.04); display: flex; align-items: center; gap: 10px; background: rgba(0,122,255,0.08);">
+            <div style="width: 32px; height: 40px; background: linear-gradient(135deg, #007aff 0%, #5856d6 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 700;">XLS</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Budget 2026.xlsx</div>
+              <div style="font-size: 10px; color: #888; margin-top: 2px;">Modified 2h ago · v3</div>
+            </div>
+            <div style="width: 8px; height: 8px; background: #007aff; border-radius: 50%; box-shadow: 0 0 4px rgba(0,122,255,0.4);"></div>
+          </div>
+          <!-- Document card -->
+          <div style="padding: 10px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.04); display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 40px; background: linear-gradient(135deg, #ff3b30 0%, #ff9500 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 700;">PDF</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Annual Report.pdf</div>
+              <div style="font-size: 10px; color: #888; margin-top: 2px;">Modified yesterday · v1</div>
+            </div>
+            <div style="width: 8px; height: 8px; background: #34c759; border-radius: 50%;"></div>
+          </div>
+          <div style="padding: 10px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.04); display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 40px; background: linear-gradient(135deg, #5856d6 0%, #af52de 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 700;">DOC</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Meeting Notes.docx</div>
+              <div style="font-size: 10px; color: #888; margin-top: 2px;">Modified 3d ago · v2</div>
+            </div>
+            <div style="width: 8px; height: 8px; background: #ff9500; border-radius: 50%;"></div>
+          </div>
+          <div style="padding: 10px 16px; display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 40px; background: linear-gradient(135deg, #ff9500 0%, #ffcc00 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 700;">PPT</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Presentation.pptx</div>
+              <div style="font-size: 10px; color: #888; margin-top: 2px;">Modified 1w ago · v1</div>
+            </div>
+            <div style="width: 8px; height: 8px; background: #34c759; border-radius: 50%;"></div>
+          </div>
+        </div>
+        <!-- Refined Detail Panel -->
+        <div style="flex: 1; background: rgba(255,255,255,0.95); padding: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+            <div style="width: 40px; height: 50px; background: linear-gradient(135deg, #007aff 0%, #5856d6 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,122,255,0.3);">XLS</div>
+            <div>
+              <div style="font-size: 16px; font-weight: 700; letter-spacing: -0.3px;">Budget 2026.xlsx</div>
+              <div style="font-size: 12px; color: #888; margin-top: 2px;">Checked out · Version 3</div>
+            </div>
+          </div>
+          <!-- Toolbar with materials -->
+          <div style="display: flex; gap: 6px; margin-bottom: 20px;">
+            <button style="padding: 6px 12px; border: none; border-radius: 8px; background: rgba(0,122,255,0.1); color: #007aff; font-size: 11px; font-weight: 600;">✏️ Edit</button>
+            <button style="padding: 6px 12px; border: none; border-radius: 8px; background: rgba(52,199,89,0.1); color: #34c759; font-size: 11px; font-weight: 600;">📥 Check In</button>
+            <button style="padding: 6px 12px; border: none; border-radius: 8px; background: rgba(0,0,0,0.05); font-size: 11px;">📤 Export</button>
+            <button style="padding: 6px 12px; border: none; border-radius: 8px; background: rgba(0,0,0,0.05); font-size: 11px; margin-left: auto;">🔒 Lock</button>
+          </div>
+          <!-- Tags with refined chips -->
+          <div style="padding: 12px; background: rgba(0,0,0,0.02); border-radius: 10px; margin-bottom: 16px;">
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 8px;">Tags</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span style="padding: 4px 10px; background: rgba(0,122,255,0.1); border-radius: 12px; font-size: 11px; font-weight: 500; color: #007aff;">finance</span>
+              <span style="padding: 4px 10px; background: rgba(0,122,255,0.1); border-radius: 12px; font-size: 11px; font-weight: 500; color: #007aff;">2026</span>
+              <span style="padding: 4px 10px; border: 1px dashed rgba(0,0,0,0.15); border-radius: 12px; font-size: 11px; color: #888; cursor: pointer;">+ Add</span>
+            </div>
+          </div>
+          <!-- Preview with shadow -->
+          <div style="height: 100px; background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; border: 0.5px solid rgba(0,0,0,0.06);">PDF Preview</div>
+          <div style="margin-top: 16px; font-size: 11px; color: #888; display: flex; justify-content: space-between; padding-top: 12px; border-top: 0.5px solid rgba(0,0,0,0.06);">
+            <span>Modified 2 hours ago</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; background: #007aff; border-radius: 50%;"></span> Checked out by you</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 20px;">
+  <h3>Key Changes</h3>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>What Changes</h4>
+      <ul>
+        <li><strong>Sidebar:</strong> Vibrancy material, section headers, badge counts, refined folder hierarchy</li>
+        <li><strong>Document rows:</strong> File-type colored icons with gradients, two-line layout (name + metadata), subtle hover/selection states</li>
+        <li><strong>Detail panel:</strong> Large file icon with shadow, pill-shaped action buttons, refined tag chips, card-style preview with shadow</li>
+        <li><strong>Typography:</strong> Tighter letter-spacing, consistent font weights, semantic hierarchy</li>
+        <li><strong>Spacing:</strong> Consistent 8pt grid, generous padding, visual breathing room</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>What Stays the Same</h4>
+      <ul>
+        <li>Three-column NavigationSplitView layout</li>
+        <li>All existing functionality (import, checkout, versions, etc.)</li>
+        <li>Toolbar actions and menu commands</li>
+        <li>Settings, Help, About dialogs</li>
+        <li>Folder tree, search, filtering</li>
+      </ul>
+    </div>
+  </div>
+</div>
