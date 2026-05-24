@@ -6,38 +6,38 @@
     </linearGradient>
   </defs>
   
-  <!-- Background circle -->
-  <circle cx="512" cy="512" r="512" fill="url(#bg)"/>
+  <!-- Full square background - macOS applies squircle mask -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
   
-  <!-- Rounder, wider head -->
-  <ellipse cx="512" cy="520" rx="340" ry="320" fill="white"/>
+  <!-- Rounder, wider head - scaled up and centered -->
+  <ellipse cx="512" cy="540" rx="380" ry="360" fill="white"/>
   
   <!-- Bigger, fluffier ears -->
-  <circle cx="300" cy="320" r="110" fill="#1a1a1a"/>
-  <circle cx="300" cy="320" r="60" fill="#333"/>
-  <circle cx="724" cy="320" r="110" fill="#1a1a1a"/>
-  <circle cx="724" cy="320" r="60" fill="#333"/>
+  <circle cx="280" cy="300" r="130" fill="#1a1a1a"/>
+  <circle cx="280" cy="300" r="70" fill="#333"/>
+  <circle cx="744" cy="300" r="130" fill="#1a1a1a"/>
+  <circle cx="744" cy="300" r="70" fill="#333"/>
   
   <!-- Larger, more dramatic eye patches -->
-  <ellipse cx="400" cy="500" rx="120" ry="90" fill="#1a1a1a" transform="rotate(-15 400 500)"/>
-  <ellipse cx="624" cy="500" rx="120" ry="90" fill="#1a1a1a" transform="rotate(15 624 500)"/>
+  <ellipse cx="380" cy="520" rx="140" ry="100" fill="#1a1a1a" transform="rotate(-15 380 520)"/>
+  <ellipse cx="644" cy="520" rx="140" ry="100" fill="#1a1a1a" transform="rotate(15 644 520)"/>
   
   <!-- Bigger eyes -->
-  <circle cx="400" cy="490" r="50" fill="white"/>
-  <circle cx="624" cy="490" r="50" fill="white"/>
-  <circle cx="410" cy="485" r="28" fill="#1a1a1a"/>
-  <circle cx="634" cy="485" r="28" fill="#1a1a1a"/>
-  <circle cx="418" cy="475" r="12" fill="white"/>
-  <circle cx="642" cy="475" r="12" fill="white"/>
+  <circle cx="380" cy="510" r="58" fill="white"/>
+  <circle cx="644" cy="510" r="58" fill="white"/>
+  <circle cx="392" cy="504" r="32" fill="#1a1a1a"/>
+  <circle cx="656" cy="504" r="32" fill="#1a1a1a"/>
+  <circle cx="400" cy="492" r="14" fill="white"/>
+  <circle cx="664" cy="492" r="14" fill="white"/>
   
   <!-- Wider, cuter nose -->
-  <ellipse cx="512" cy="600" rx="40" ry="28" fill="#1a1a1a"/>
-  <ellipse cx="512" cy="595" rx="15" ry="8" fill="#333" opacity="0.5"/>
+  <ellipse cx="512" cy="630" rx="48" ry="32" fill="#1a1a1a"/>
+  <ellipse cx="512" cy="624" rx="18" ry="10" fill="#333" opacity="0.5"/>
   
   <!-- Bigger smile -->
-  <path d="M460 645 Q512 700 564 645" stroke="#1a1a1a" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M440 680 Q512 750 584 680" stroke="#1a1a1a" stroke-width="14" fill="none" stroke-linecap="round"/>
   
   <!-- Pink cheeks -->
-  <circle cx="330" cy="620" r="40" fill="#FFB6C1" opacity="0.5"/>
-  <circle cx="694" cy="620" r="40" fill="#FFB6C1" opacity="0.5"/>
+  <circle cx="300" cy="660" r="48" fill="#FFB6C1" opacity="0.5"/>
+  <circle cx="724" cy="660" r="48" fill="#FFB6C1" opacity="0.5"/>
 </svg>
