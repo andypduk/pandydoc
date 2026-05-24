@@ -12,7 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupAppIcon() {
-        if let iconURL = Bundle.main.url(forResource: "PandaIcon", withExtension: "icns"),
+        if let iconURL = Bundle.main.url(forResource: "PandaHead", withExtension: "icns"),
            let icon = NSImage(contentsOf: iconURL) {
             NSApplication.shared.applicationIconImage = icon
         }
