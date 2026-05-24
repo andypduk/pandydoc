@@ -51,7 +51,6 @@ struct HelpView: View {
                 PrintingTab().tag(HelpTab.printing)
                 AdvancedTab().tag(HelpTab.advanced)
             }
-            .tabViewStyle(.segmented)
             .padding(.horizontal)
             .padding(.top)
         }
