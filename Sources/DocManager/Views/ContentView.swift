@@ -455,9 +455,10 @@ struct ContentView: View {
 
     private var appBranding: some View {
         HStack(spacing: 8) {
-            Image(systemName: "pawprint.fill")
-                .font(.title2)
-                .foregroundColor(.accentColor)
+            Image(pdfNamed: "PandaHead")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
             Text("PandyDoc")
                 .font(.headline)
                 .fontWeight(.semibold)
@@ -544,8 +545,10 @@ struct ContentView: View {
                     .id("\(viewModel.selectedDocument!.id.uuidString)-\(viewModel.documentRefreshToken)")
             } else {
                 VStack(spacing: 16) {
-                    Image(systemName: "pawprint.fill")
-                        .font(.system(size: 64))
+                    Image(pdfNamed: "PandaHead")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 64, height: 64)
                         .foregroundColor(.accentColor.opacity(0.6))
                     Text("PandyDoc")
                         .font(.title)
@@ -1510,5 +1513,18 @@ struct TagCloudView: View {
             }
         }
         .frame(width: 500, height: 400)
+    }
+}
+
+extension Image {
+    init(pdfNamed name: String) {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "pdf"),
+              let image = NSImage(contentsOf: url) else {
+            self.init(systemName: "pawprint.fill")
+            return
+        }
+        let rep = NSBitmapImageRep(data: image.tiffRepresentation!)!
+        let cgImage = rep.cgImage!
+        self.init(nsImage: NSImage(cgImage: cgImage, size: image.size))
     }
 }
