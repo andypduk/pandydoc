@@ -688,6 +688,14 @@ final class DocumentListViewModel: ObservableObject {
     }
 
     func openDocument(document: Document) {
+        if document.isLocked {
+            if isShowingTemplates {
+                errorMessage = "Template is locked. Create a new document from this template instead."
+            } else {
+                errorMessage = "Document is locked. Unlock it to edit."
+            }
+            return
+        }
         let url = URL(fileURLWithPath: document.filePath)
         let config = NSWorkspace.OpenConfiguration()
         config.activates = true
@@ -695,6 +703,10 @@ final class DocumentListViewModel: ObservableObject {
     }
 
     func exportDocument(_ document: Document) {
+        if document.isLocked && isShowingTemplates {
+            errorMessage = "Template is locked. Create a new document from this template instead."
+            return
+        }
         let savePanel = NSSavePanel()
         savePanel.title = "Export Document"
         savePanel.nameFieldStringValue = document.fileName
@@ -721,6 +733,10 @@ final class DocumentListViewModel: ObservableObject {
     }
 
     func deleteDocument(document: Document) {
+        if document.isLocked && isShowingTemplates {
+            errorMessage = "Template is locked. Unlock it to delete."
+            return
+        }
         do {
             try storage.deleteDocument(id: document.id)
             refreshDocuments()
