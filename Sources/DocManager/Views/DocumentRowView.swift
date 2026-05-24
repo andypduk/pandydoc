@@ -6,21 +6,30 @@ struct DocumentRowView: View {
     @ObservedObject var viewModel: DocumentListViewModel
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DesignTokens.Spacing.sm) {
             documentIcon
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Text(document.name)
-                    .font(.body)
+                    .font(DesignTokens.Typography.bodyStyle())
                     .lineLimit(1)
                 
-                HStack(spacing: 4) {
+                HStack(spacing: DesignTokens.Spacing.xs) {
                     Circle()
-                        .fill(viewModel.getStatusColor(document.status))
-                        .frame(width: 8, height: 8)
+                        .fill(statusColor)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: statusColor.opacity(0.4), radius: document.isCheckedOut ? 3 : 0)
                     
                     Text(statusText)
-                        .font(.caption)
+                        .font(DesignTokens.Typography.metadataStyle())
+                        .foregroundColor(.secondary)
+                    
+                    Text("·")
+                        .font(DesignTokens.Typography.metadataStyle())
+                        .foregroundColor(.secondary)
+                    
+                    Text("v\(document.currentVersion)")
+                        .font(DesignTokens.Typography.metadataStyle())
                         .foregroundColor(.secondary)
                 }
 
@@ -45,15 +54,9 @@ struct DocumentRowView: View {
                     .font(.caption)
             }
 
-            if document.isCheckedOut {
-                Image(systemName: "pencil")
-                    .foregroundColor(.blue)
-                    .font(.caption)
-            }
-            
             if document.isLocked {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.red)
+                    .foregroundColor(DesignTokens.Colors.statusLocked)
                     .font(.caption)
             }
 
@@ -63,7 +66,8 @@ struct DocumentRowView: View {
                     .font(.caption)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+        .padding(.horizontal, DesignTokens.Spacing.sm)
         .contentShape(Rectangle())
         .onDrag {
             let provider = NSItemProvider()
@@ -85,43 +89,34 @@ struct DocumentRowView: View {
         }
     }
     
-    private var documentIcon: some View {
-        Group {
-            switch document.documentType {
-            case .pdf:
-                Image(systemName: "doc.richtext")
-                    .foregroundColor(.red)
-            case .docx:
-                Image(systemName: "doc.text")
-                    .foregroundColor(.blue)
-            case .xlsx:
-                Image(systemName: "tablecells")
-                    .foregroundColor(.green)
-            case .pptx:
-                Image(systemName: "play.rectangle.fill")
-                    .foregroundColor(.orange)
-            case .txt:
-                Image(systemName: "doc.plaintext")
-                    .foregroundColor(.gray)
-            case .rtf:
-                Image(systemName: "doc.richtext")
-                    .foregroundColor(.orange)
-            case .pages:
-                Image(systemName: "doc.text.fill")
-                    .foregroundColor(.blue)
-            case .numbers:
-                Image(systemName: "tablecells.fill")
-                    .foregroundColor(.green)
-            case .key:
-                Image(systemName: "play.rectangle.fill")
-                    .foregroundColor(.orange)
-            case .other:
-                Image(systemName: "doc")
-                    .foregroundColor(.gray)
-            }
+    private var statusColor: Color {
+        switch document.status {
+        case .available: return DesignTokens.Colors.statusAvailable
+        case .checkedOut: return DesignTokens.Colors.statusCheckedOut
+        case .locked: return DesignTokens.Colors.statusLocked
         }
-        .font(.title2)
-        .frame(width: 32, height: 32)
+    }
+    
+    private var documentIcon: some View {
+        let colors = DesignTokens.FileTypeColor.gradient(for: document.documentType)
+        let iconName = DesignTokens.FileTypeColor.icon(for: document.documentType)
+        
+        return ZStack {
+            RoundedRectangle(cornerRadius: DesignTokens.Corner.md)
+                .fill(
+                    LinearGradient(
+                        colors: colors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 32, height: 40)
+                .shadow(color: colors[0].opacity(0.3), radius: 4, x: 0, y: 2)
+            
+            Image(systemName: iconName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+        }
     }
     
     private var statusText: String {
@@ -131,7 +126,7 @@ struct DocumentRowView: View {
             if document.checkedOutBy == NSFullUserName() {
                 return "Checked out by you"
             }
-            return "Checked out by \(document.checkedOutBy ?? "unknown")"
+            return "Checked out"
         case .locked: return "Locked"
         }
     }
