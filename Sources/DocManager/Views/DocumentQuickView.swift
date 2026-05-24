@@ -48,6 +48,8 @@ struct DocumentQuickView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            headerSection
+            Divider()
             toolbar
             Divider()
             tagSection
@@ -56,15 +58,9 @@ struct DocumentQuickView: View {
             Divider()
             statusBar
         }
-        .onAppear {
-            loadDocument()
-        }
-        .onChange(of: viewModel.selectedDocument?.id) { _, _ in
-            loadDocument()
-        }
-        .onChange(of: viewModel.documentRefreshToken) { _, _ in
-            loadDocument()
-        }
+        .onAppear { loadDocument() }
+        .onChange(of: viewModel.selectedDocument?.id) { _, _ in loadDocument() }
+        .onChange(of: viewModel.documentRefreshToken) { _, _ in loadDocument() }
         .alert("Conversion Error", isPresented: .init(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
@@ -78,23 +74,23 @@ struct DocumentQuickView: View {
     @State private var newTagText = ""
 
     private var tagSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Tags")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            Text("Tags")
+                .font(DesignTokens.Typography.labelStyle())
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+            
             if !document.tags.isEmpty {
-                FlowLayout {
+                FlowLayout(spacing: DesignTokens.Spacing.xs) {
                     ForEach(document.tags, id: \.self) { tag in
-                        TagChip(tag: tag) {
+                        RefinedTagChip(tag: tag) {
                             viewModel.removeTag(from: document, tag: tag)
                         }
                     }
                 }
             }
-            HStack(spacing: 4) {
+            
+            HStack(spacing: DesignTokens.Spacing.xs) {
                 Image(systemName: "tag")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -108,87 +104,88 @@ struct DocumentQuickView: View {
                         }
                     }
             }
-            .padding(4)
-            .background(Color(NSColor.textBackgroundColor))
-            .cornerRadius(4)
+            .padding(DesignTokens.Spacing.xs)
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.Corner.md)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                    .foregroundColor(Color.black.opacity(0.15))
+            )
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, DesignTokens.Spacing.lg)
+        .padding(.vertical, DesignTokens.Spacing.sm)
     }
 
     private var toolbar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DesignTokens.Spacing.sm) {
             if pdfDocument != nil || previewImage != nil {
-                Button(action: zoomIn) {
-                    Image(systemName: "plus.magnifyingglass")
-                }
-                .disabled(zoomLevel >= 3.0)
-                .help("Zoom In")
-
-                Button(action: zoomOut) {
-                    Image(systemName: "minus.magnifyingglass")
-                }
-                .disabled(zoomLevel <= 0.25)
-                .help("Zoom Out")
-
-                Button(action: { zoomLevel = 1.0 }) {
-                    Image(systemName: "1.magnifyingglass")
-                }
-                .disabled(zoomLevel == 1.0)
-                .help("Actual Size")
+                pillButton(icon: "plus.magnifyingglass", action: zoomIn, disabled: zoomLevel >= 3.0, help: "Zoom In")
+                pillButton(icon: "minus.magnifyingglass", action: zoomOut, disabled: zoomLevel <= 0.25, help: "Zoom Out")
+                pillButton(icon: "1.magnifyingglass", action: { zoomLevel = 1.0 }, disabled: zoomLevel == 1.0, help: "Actual Size")
             }
 
             Spacer()
 
             if pdfDocument != nil && totalPages > 1 {
-                HStack(spacing: 4) {
-                    Button(action: { if currentPage > 1 { currentPage -= 1 } }) {
-                        Image(systemName: "chevron.left")
-                    }
-                    .disabled(currentPage <= 1)
-
+                HStack(spacing: DesignTokens.Spacing.xs) {
+                    pillButton(icon: "chevron.left", action: { if currentPage > 1 { currentPage -= 1 } }, disabled: currentPage <= 1)
                     Text("Page \(currentPage) of \(totalPages)")
                         .font(.caption)
                         .monospacedDigit()
-
-                    Button(action: { if currentPage < totalPages { currentPage += 1 } }) {
-                        Image(systemName: "chevron.right")
-                    }
-                    .disabled(currentPage >= totalPages)
+                    pillButton(icon: "chevron.right", action: { if currentPage < totalPages { currentPage += 1 } }, disabled: currentPage >= totalPages)
                 }
             }
 
             Spacer()
 
             if !isQuickLookable && !isPDF {
-                Button(action: convertToPDF) {
-                    Label("Convert to PDF", systemImage: "doc.richtext")
-                }
-                .disabled(isConverting)
-                .help("Convert document to PDF for preview")
+                actionPill(label: "Convert to PDF", icon: "doc.richtext", action: convertToPDF, disabled: isConverting)
             }
 
-            Button(action: {
-                let url = URL(fileURLWithPath: document.filePath)
-                NSWorkspace.shared.open(url)
-            }) {
-                Image(systemName: "arrow.up.right.square")
-            }
-            .disabled(document.isLocked)
-            .help(document.isLocked ? "Document is locked" : "Open in Default App")
+            actionPill(label: "Open", icon: "arrow.up.right.square", action: {
+                NSWorkspace.shared.open(URL(fileURLWithPath: document.filePath))
+            }, disabled: document.isLocked)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+    }
+    
+    private func pillButton(icon: String, action: @escaping () -> Void, disabled: Bool = false, help: String? = nil) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .frame(width: 28, height: 28)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(DesignTokens.Corner.sm)
+        }
+        .disabled(disabled)
+        .buttonStyle(.plain)
+        .help(help ?? "")
+    }
+    
+    private func actionPill(label: String, icon: String, action: @escaping () -> Void, disabled: Bool = false) -> some View {
+        Button(action: action) {
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .padding(.horizontal, DesignTokens.Spacing.sm)
+            .padding(.vertical, DesignTokens.Spacing.xs)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(DesignTokens.Corner.lg)
+        }
+        .disabled(disabled)
+        .buttonStyle(.plain)
     }
 
     private var documentPreview: some View {
         Group {
             if isConverting {
-                VStack(spacing: 12) {
+                VStack(spacing: DesignTokens.Spacing.sm) {
                     ProgressView()
                     Text("Generating preview...")
-                        .font(.caption)
+                        .font(DesignTokens.Typography.metadataStyle())
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -209,54 +206,121 @@ struct DocumentQuickView: View {
                 QuickLookView(fileURL: url)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(spacing: 16) {
+                VStack(spacing: DesignTokens.Spacing.lg) {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.system(size: 48))
                         .foregroundColor(.secondary)
                     Text("Preview not available")
-                        .font(.body)
+                        .font(DesignTokens.Typography.bodyStyle())
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.Corner.lg)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+        )
+        .padding(.horizontal, DesignTokens.Spacing.lg)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+    }
+
+    private var headerSection: some View {
+        HStack(spacing: DesignTokens.Spacing.md) {
+            let colors = DesignTokens.FileTypeColor.gradient(for: document.documentType)
+            let label = DesignTokens.FileTypeColor.label(for: document.documentType)
+            
+            ZStack {
+                RoundedRectangle(cornerRadius: DesignTokens.Corner.lg)
+                    .fill(
+                        LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .frame(width: 40, height: 50)
+                    .shadow(color: colors[0].opacity(0.3), radius: 6, x: 0, y: 3)
+                
+                Text(label)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                Text(document.name)
+                    .font(DesignTokens.Typography.titleStyle())
+                    .lineLimit(1)
+                
+                HStack(spacing: DesignTokens.Spacing.xs) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 6, height: 6)
+                    Text(statusText)
+                        .font(DesignTokens.Typography.metadataStyle())
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, DesignTokens.Spacing.lg)
+        .padding(.vertical, DesignTokens.Spacing.md)
+    }
+
+    private var statusColor: Color {
+        switch document.status {
+        case .available: return DesignTokens.Colors.statusAvailable
+        case .checkedOut: return DesignTokens.Colors.statusCheckedOut
+        case .locked: return DesignTokens.Colors.statusLocked
+        }
+    }
+
+    private var statusText: String {
+        switch document.status {
+        case .available: return "Available"
+        case .checkedOut:
+            if document.checkedOutBy == NSFullUserName() {
+                return "Checked out by you"
+            }
+            return "Checked out"
+        case .locked: return "Locked"
         }
     }
 
     private var statusBar: some View {
         HStack {
             Text(document.name)
-                .font(.caption)
+                .font(DesignTokens.Typography.metadataStyle())
                 .lineLimit(1)
                 .truncationMode(.middle)
 
             Spacer()
 
             Text(formatFileSize(document.fileSize))
-                .font(.caption)
+                .font(DesignTokens.Typography.metadataStyle())
                 .foregroundColor(.secondary)
 
-            Text("•")
-                .font(.caption)
+            Text("·")
+                .font(DesignTokens.Typography.metadataStyle())
                 .foregroundColor(.secondary)
 
             Text("v\(document.currentVersion)")
-                .font(.caption)
+                .font(DesignTokens.Typography.metadataStyle())
                 .foregroundColor(.secondary)
 
-            Text("•")
-                .font(.caption)
+            Text("·")
+                .font(DesignTokens.Typography.metadataStyle())
                 .foregroundColor(.secondary)
 
             Circle()
-                .fill(viewModel.getStatusColor(document.status))
-                .frame(width: 8, height: 8)
+                .fill(statusColor)
+                .frame(width: 6, height: 6)
 
             Text(document.status.rawValue.capitalized)
-                .font(.caption)
+                .font(DesignTokens.Typography.metadataStyle())
                 .foregroundColor(.secondary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DesignTokens.Spacing.lg)
+        .padding(.vertical, DesignTokens.Spacing.sm)
         .background(Color(NSColor.controlBackgroundColor))
     }
 
@@ -400,25 +464,26 @@ struct QuickLookView: NSViewRepresentable {
     }
 }
 
-struct TagChip: View {
+struct RefinedTagChip: View {
     let tag: String
     let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: DesignTokens.Spacing.xs) {
             Text(tag)
-                .font(.caption)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.accentColor)
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 10))
+                    .font(.system(size: 9))
             }
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
-        .background(Color.accentColor.opacity(0.15))
-        .cornerRadius(8)
+        .padding(.horizontal, DesignTokens.Spacing.sm)
+        .padding(.vertical, DesignTokens.Spacing.xs)
+        .background(DesignTokens.Colors.tagChipBackground)
+        .cornerRadius(DesignTokens.Corner.xl)
     }
 }
 
