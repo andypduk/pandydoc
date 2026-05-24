@@ -431,13 +431,31 @@ struct ContentView: View {
 
     private func handleFileDrop(providers: [NSItemProvider], targetFolderID: UUID?) {
         for provider in providers {
-            _ = provider.loadFileRepresentation(forTypeIdentifier: "public.data") { url, error in
-                guard let url = url else { return }
-                let started = url.startAccessingSecurityScopedResource()
-                DispatchQueue.main.async {
-                    viewModel.importDocument(fileURL: url, to: targetFolderID)
+            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
+                    guard let urlData = item as? Data,
+                          let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                    let started = url.startAccessingSecurityScopedResource()
+                    DispatchQueue.main.async {
+                        viewModel.importDocument(fileURL: url, to: targetFolderID)
+                        if started {
+                            url.stopAccessingSecurityScopedResource()
+                        }
+                    }
+                }
+            } else {
+                _ = provider.loadFileRepresentation(forTypeIdentifier: "public.data") { url, error in
+                    guard let url = url else { return }
+                    let started = url.startAccessingSecurityScopedResource()
+                    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("PandyDoc/Drop", isDirectory: true)
+                    try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                    let copyURL = tempDir.appendingPathComponent(url.lastPathComponent)
+                    try? FileManager.default.copyItem(at: url, to: copyURL)
                     if started {
                         url.stopAccessingSecurityScopedResource()
+                    }
+                    DispatchQueue.main.async {
+                        viewModel.importDocument(fileURL: copyURL, to: targetFolderID)
                     }
                 }
             }
@@ -447,8 +465,9 @@ struct ContentView: View {
     private func handleMixedDrop(providers: [NSItemProvider], folder: Folder) {
         for provider in providers {
             if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-                _ = provider.loadFileRepresentation(forTypeIdentifier: "public.data") { url, error in
-                    guard let url = url else { return }
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
+                    guard let urlData = item as? Data,
+                          let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
                     let started = url.startAccessingSecurityScopedResource()
                     DispatchQueue.main.async {
                         viewModel.importDocument(fileURL: url, to: folder.id)
