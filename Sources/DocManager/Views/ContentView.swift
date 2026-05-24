@@ -223,7 +223,7 @@ struct ContentView: View {
                 }
                 .tag(SidebarItem.inbox)
                 .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                    handleFileDrop(providers: providers, targetFolderID: viewModel.getInboxFolderID())
+                    handleDropToFolder(providers: providers, targetFolderID: viewModel.getInboxFolderID())
                     return true
                 }
                 .contextMenu {
@@ -256,7 +256,7 @@ struct ContentView: View {
                 }
                 .tag(SidebarItem.allDocuments)
                 .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                    handleFileDrop(providers: providers, targetFolderID: nil)
+                    handleDropToFolder(providers: providers, targetFolderID: nil)
                     return true
                 }
                 .contextMenu {
@@ -284,7 +284,7 @@ struct ContentView: View {
                     }
                     .tag(SidebarItem.templates)
                     .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                        handleFileDrop(providers: providers, targetFolderID: viewModel.getTemplatesFolderID())
+                        handleDropToFolder(providers: providers, targetFolderID: viewModel.getTemplatesFolderID())
                         return true
                     }
                     .contextMenu {
@@ -300,8 +300,8 @@ struct ContentView: View {
 
             Section {
                 FolderTreeView(nodes: viewModel.folderTree, selection: $sidebarSelection, expandedFolders: $expandedFolders,
-                    onDropFile: { folderID, providers in
-                        handleFileDrop(providers: providers, targetFolderID: folderID)
+                    onDropFile: { folder, providers in
+                        handleMixedDrop(providers: providers, folder: folder)
                     },
                     onDeleteFolder: { folder in
                         viewModel.deleteFolder(folder)
@@ -412,7 +412,7 @@ struct ContentView: View {
             viewModel.searchDocuments()
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-            handleFileDrop(providers: providers, targetFolderID: viewModel.currentFolder?.id)
+            handleDropToFolder(providers: providers, targetFolderID: viewModel.currentFolder?.id)
             return true
         }
         .overlay {
@@ -469,8 +469,24 @@ struct ContentView: View {
         }
     }
 
-    private func handleFileDrop(providers: [NSItemProvider], targetFolderID: UUID?) {
+    private func handleMixedDrop(providers: [NSItemProvider], folder: Folder) {
+        handleDropToFolder(providers: providers, targetFolderID: folder.id)
+    }
+
+    private func handleDropToFolder(providers: [NSItemProvider], targetFolderID: UUID?) {
         for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier("public.utf8-plain-text") {
+                provider.loadItem(forTypeIdentifier: "public.utf8-plain-text", options: nil) { data, _ in
+                    if let data = data as? Data,
+                       let uuidString = String(data: data, encoding: .utf8),
+                       let docID = UUID(uuidString: uuidString) {
+                        DispatchQueue.main.async {
+                            viewModel.moveDocument(documentID: docID, to: targetFolderID)
+                        }
+                        return
+                    }
+                }
+            }
             if provider.hasItemConformingToTypeIdentifier("public.file-url") {
                 provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
                     guard let urlData = item as? Data,
@@ -496,34 +512,6 @@ struct ContentView: View {
                     }
                     DispatchQueue.main.async {
                         viewModel.importDocument(fileURL: copyURL, to: targetFolderID)
-                    }
-                }
-            }
-        }
-    }
-
-    private func handleMixedDrop(providers: [NSItemProvider], folder: Folder) {
-        for provider in providers {
-            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
-                    guard let urlData = item as? Data,
-                          let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                    let started = url.startAccessingSecurityScopedResource()
-                    DispatchQueue.main.async {
-                        viewModel.importDocument(fileURL: url, to: folder.id)
-                        if started {
-                            url.stopAccessingSecurityScopedResource()
-                        }
-                    }
-                }
-            } else {
-                provider.loadItem(forTypeIdentifier: "public.utf8-plain-text", options: nil) { data, _ in
-                    if let data = data as? Data,
-                       let uuidString = String(data: data, encoding: .utf8),
-                       let docID = UUID(uuidString: uuidString) {
-                        DispatchQueue.main.async {
-                            viewModel.moveDocument(documentID: docID, to: folder.id)
-                        }
                     }
                 }
             }
@@ -634,7 +622,7 @@ struct FolderTreeView: View {
     let nodes: [DocumentListViewModel.FolderNode]
     @Binding var selection: SidebarItem?
     @Binding var expandedFolders: Set<UUID>
-    let onDropFile: (UUID, [NSItemProvider]) -> Void
+    let onDropFile: (Folder, [NSItemProvider]) -> Void
     let onDeleteFolder: (Folder) -> Void
     let onRenameFolder: (Folder) -> Void
     let onArchiveFolder: (Folder) -> Void
@@ -793,7 +781,7 @@ struct FolderRow: View {
     let isExpanded: Bool
     @Binding var selection: SidebarItem?
     let onToggleExpand: () -> Void
-    let onDropFile: (UUID, [NSItemProvider]) -> Void
+    let onDropFile: (Folder, [NSItemProvider]) -> Void
     let onDeleteFolder: (Folder) -> Void
     let onRenameFolder: (Folder) -> Void
     let onArchiveFolder: (Folder) -> Void
@@ -844,7 +832,7 @@ struct FolderRow: View {
             selection = .folder(node.folder)
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-            onDropFile(node.folder.id, providers)
+            onDropFile(node.folder, providers)
             return true
         }
         .contextMenu {
