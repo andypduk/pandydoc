@@ -80,18 +80,18 @@ struct DocManagerApp: App {
 
             CommandGroup(replacing: .help) {
                 Button("PandyDoc Help") {
-                    NotificationCenter.default.post(name: .showHelp, object: nil)
+                    NotificationCenter.default.post(name: .showHelpWithTab, object: nil, userInfo: ["tab": HelpTab.gettingStarted])
                 }
                 .keyboardShortcut("?", modifiers: [.command])
 
                 Divider()
 
                 Button("Getting Started") {
-                    NotificationCenter.default.post(name: .showGettingStarted, object: nil)
+                    NotificationCenter.default.post(name: .showHelpWithTab, object: nil, userInfo: ["tab": HelpTab.gettingStarted])
                 }
 
                 Button("Keyboard Shortcuts") {
-                    NotificationCenter.default.post(name: .showShortcuts, object: nil)
+                    NotificationCenter.default.post(name: .showHelpWithTab, object: nil, userInfo: ["tab": HelpTab.advanced])
                 }
 
                 Divider()

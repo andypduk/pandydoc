@@ -14,9 +14,8 @@ struct ContentView: View {
     @State private var showPrinterSetup = false
     @State private var isCreatingFolder = false
     @State private var sidebarSelection: SidebarItem? = .allDocuments
-    @State private var showHelpSheet = false
-    @State private var showGettingStartedSheet = false
-    @State private var showShortcutsSheet = false
+    @State private var showHelp = false
+    @State private var helpInitialTab: HelpTab? = nil
     @State private var expandedFolders: Set<UUID> = []
 
     var body: some View {
@@ -104,14 +103,8 @@ struct ContentView: View {
         .sheet(isPresented: $viewModel.showFolderMoveSheet) {
             FolderMoveSheetView(viewModel: viewModel)
         }
-        .sheet(isPresented: $showHelpSheet) {
-            HelpSheetView()
-        }
-        .sheet(isPresented: $showGettingStartedSheet) {
-            GettingStartedSheetView()
-        }
-        .sheet(isPresented: $showShortcutsSheet) {
-            KeyboardShortcutsSheetView()
+        .sheet(isPresented: $showHelp) {
+            HelpView(initialTab: helpInitialTab)
         }
         .onAppear {
             viewModel.loadInitialData()
@@ -120,13 +113,18 @@ struct ContentView: View {
             ) { _ in showPrinterSetup = true }
             NotificationCenter.default.addObserver(
                 forName: .showHelp, object: nil, queue: .main
-            ) { _ in showHelpSheet = true }
+            ) { _ in
+                helpInitialTab = nil
+                showHelp = true
+            }
             NotificationCenter.default.addObserver(
-                forName: .showGettingStarted, object: nil, queue: .main
-            ) { _ in showGettingStartedSheet = true }
-            NotificationCenter.default.addObserver(
-                forName: .showShortcuts, object: nil, queue: .main
-            ) { _ in showShortcutsSheet = true }
+                forName: .showHelpWithTab, object: nil, queue: .main
+            ) { notification in
+                if let tab = notification.userInfo?["tab"] as? HelpTab {
+                    helpInitialTab = tab
+                }
+                showHelp = true
+            }
             NotificationCenter.default.addObserver(
                 forName: .navigateToAllDocuments, object: nil, queue: .main
             ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToRoot() } }
