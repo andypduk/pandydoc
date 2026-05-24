@@ -4,12 +4,21 @@ import SwiftUI
 struct DocManagerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var showAbout = false
+    @State private var apiServerStarted = false
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .sheet(isPresented: $showAbout) {
                     AboutView()
+                }
+                .onAppear {
+                    if !apiServerStarted {
+                        apiServerStarted = true
+                        Task { @MainActor in
+                            try? await APIServer.shared.start()
+                        }
+                    }
                 }
         }
         .windowStyle(.automatic)
@@ -113,8 +122,7 @@ extension Notification.Name {
     static let importFolder = Notification.Name("importFolder")
     static let checkInDocument = Notification.Name("checkInDocument")
     static let showHelp = Notification.Name("showHelp")
-    static let showGettingStarted = Notification.Name("showGettingStarted")
-    static let showShortcuts = Notification.Name("showShortcuts")
+    static let showHelpWithTab = Notification.Name("showHelpWithTab")
     static let navigateToAllDocuments = Notification.Name("navigateToAllDocuments")
     static let navigateToTemplates = Notification.Name("navigateToTemplates")
     static let navigateToInbox = Notification.Name("navigateToInbox")

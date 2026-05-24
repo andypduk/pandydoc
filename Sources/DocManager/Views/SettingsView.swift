@@ -14,6 +14,12 @@ struct SettingsView: View {
     @State private var showStatus = false
     @State private var showBackupSheet = false
     @State private var isICloudAvailable = false
+    @State private var showApiKey = false
+    @State private var showRegenerateAlert = false
+    @State private var apiPort: Int = {
+        let stored = UserDefaults.standard.integer(forKey: "apiPort")
+        return stored == 0 ? 8080 : stored
+    }()
 
     private let dbManager = DatabaseManager.shared
     private let fileManager = FileManager.default
@@ -55,6 +61,11 @@ struct SettingsView: View {
             databaseSettings
                 .tabItem {
                     Label("Database", systemImage: "externaldrive")
+                }
+
+            apiSettings
+                .tabItem {
+                    Label("API", systemImage: "network")
                 }
         }
         .frame(width: 480, height: 340)
@@ -220,6 +231,62 @@ struct SettingsView: View {
         .sheet(isPresented: $showBackupSheet) {
             BackupSheet(isICloudAvailable: isICloudAvailable, statusMessage: $statusMessage, showStatus: $showStatus)
         }
+    }
+
+    var apiSettings: some View {
+        VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("API Key")
+                    .font(.headline)
+                HStack {
+                    Text(showApiKey ? APIKeyManager.shared.apiKey : String(repeating: "•", count: 64))
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                    Button(showApiKey ? "Hide" : "Show") { showApiKey.toggle() }
+                    Button("Copy") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(APIKeyManager.shared.apiKey, forType: .string)
+                    }
+                }
+            }
+
+            Button("Regenerate Key", role: .destructive) { showRegenerateAlert = true }
+                .alert("Regenerate API Key?", isPresented: $showRegenerateAlert) {
+                    Button("Regenerate", role: .destructive) { _ = APIKeyManager.shared.regenerateKey(); showApiKey = false }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("The current key will stop working immediately.")
+                }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Server")
+                    .font(.headline)
+                HStack {
+                    Text("Status:")
+                    Text(APIServer.shared.isRunning ? "Running" : "Stopped")
+                        .foregroundColor(APIServer.shared.isRunning ? .green : .red)
+                    Spacer()
+                    Button(APIServer.shared.isRunning ? "Stop" : "Start") {
+                        Task { @MainActor in
+                            if APIServer.shared.isRunning {
+                                await APIServer.shared.stop()
+                            } else {
+                                try? await APIServer.shared.start()
+                            }
+                        }
+                    }
+                }
+                HStack {
+                    Text("Port:")
+                    TextField("Port", value: $apiPort, formatter: NumberFormatter())
+                        .frame(width: 80)
+                        .onChange(of: apiPort) { UserDefaults.standard.set(apiPort, forKey: "apiPort") }
+                }
+            }
+        }
+        .padding()
     }
 
     private func compressDatabase() {
