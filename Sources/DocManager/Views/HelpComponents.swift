@@ -17,13 +17,11 @@ struct QuickRefCard: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(2)
-            if action != nil {
-                Spacer()
-                Button("Learn More") {
-                    action?()
-                }
-                .buttonStyle(.plain)
-                .font(.caption)
+            if let action = action {
+                Divider()
+                Button("Learn More", action: action)
+                    .buttonStyle(.plain)
+                    .font(.caption)
             }
         }
         .padding()
@@ -53,12 +51,12 @@ struct WalkthroughSection: View {
                     }
                 }
                 
-                if let warning = warning {
-                    TipBox(text: warning, style: .warning)
-                }
-                
                 if let tip = tip {
                     TipBox(text: tip, style: .tip)
+                }
+                
+                if let warning = warning {
+                    TipBox(text: warning, style: .warning)
                 }
             }
             .padding(.top, 8)
@@ -78,7 +76,7 @@ struct TipBox: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: style == .warning ? "exclamationmark.triangle.fill" : "lightbulb.fill")
-                .foregroundColor(style == .warning ? .orange : .yellow)
+                .foregroundColor(style == .warning ? .orange : Color(red: 0.85, green: 0.65, blue: 0.125))
             Text(text)
                 .font(.caption)
                 .foregroundColor(.secondary)
