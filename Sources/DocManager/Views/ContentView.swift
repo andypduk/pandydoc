@@ -613,7 +613,7 @@ struct FolderTreeView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             ForEach(flatRows, id: \.node.id) { row in
                 FolderRow(
                     node: row.node,
