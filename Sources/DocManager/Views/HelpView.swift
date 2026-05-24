@@ -36,3 +36,30 @@ enum HelpTab: Int, CaseIterable, Identifiable {
 extension Notification.Name {
     static let showHelpWithTab = Notification.Name("showHelpWithTab")
 }
+
+struct HelpView: View {
+    @State private var selectedTab: HelpTab = .gettingStarted
+    var initialTab: HelpTab?
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            TabView(selection: $selectedTab) {
+                GettingStartedTab().tag(HelpTab.gettingStarted)
+                ManagingDocumentsTab().tag(HelpTab.managingDocuments)
+                OrganizingTab().tag(HelpTab.organizing)
+                TemplatesVersionsTab().tag(HelpTab.templatesVersions)
+                PrintingTab().tag(HelpTab.printing)
+                AdvancedTab().tag(HelpTab.advanced)
+            }
+            .tabViewStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.top)
+        }
+        .frame(width: 700, height: 500)
+        .onAppear {
+            if let initial = initialTab {
+                selectedTab = initial
+            }
+        }
+    }
+}
