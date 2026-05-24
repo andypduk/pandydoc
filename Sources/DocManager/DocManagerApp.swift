@@ -58,6 +58,11 @@ struct DocManagerApp: App {
                 }
                 .keyboardShortcut("3", modifiers: [.command])
 
+                Button("Show Flagged") {
+                    NotificationCenter.default.post(name: .navigateToFlagged, object: nil)
+                }
+                .keyboardShortcut("4", modifiers: [.command])
+
                 Button("Show All Documents") {
                     NotificationCenter.default.post(name: .navigateToAllDocuments, object: nil)
                 }
@@ -109,4 +114,5 @@ extension Notification.Name {
     static let navigateToAllDocuments = Notification.Name("navigateToAllDocuments")
     static let navigateToTemplates = Notification.Name("navigateToTemplates")
     static let navigateToInbox = Notification.Name("navigateToInbox")
+    static let navigateToFlagged = Notification.Name("navigateToFlagged")
 }

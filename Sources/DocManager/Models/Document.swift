@@ -19,12 +19,13 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
     var filePath: String
     var thumbnailPath: String?
     var protected: Bool
+    var flagged: Bool
     
     enum CodingKeys: String, CodingKey {
         case id, name, fileName, fileExtension, documentType, status
         case checkedOutBy, checkedOutAt, currentVersion, fileSize
         case createdAt, updatedAt, tags, notes, parentID, filePath
-        case thumbnailPath, protected
+        case thumbnailPath, protected, flagged
     }
     
     init(from decoder: Decoder) throws {
@@ -47,6 +48,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         filePath = try container.decode(String.self, forKey: .filePath)
         thumbnailPath = try container.decodeIfPresent(String.self, forKey: .thumbnailPath)
         protected = try container.decodeIfPresent(Bool.self, forKey: .protected) ?? false
+        flagged = try container.decodeIfPresent(Bool.self, forKey: .flagged) ?? false
     }
     
     func encode(to encoder: Encoder) throws {
@@ -69,6 +71,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         try container.encode(filePath, forKey: .filePath)
         try container.encodeIfPresent(thumbnailPath, forKey: .thumbnailPath)
         try container.encode(protected, forKey: .protected)
+        try container.encode(flagged, forKey: .flagged)
     }
     
     init(
@@ -89,7 +92,8 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         parentID: UUID?,
         filePath: String,
         thumbnailPath: String?,
-        protected: Bool
+        protected: Bool,
+        flagged: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -109,6 +113,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         self.filePath = filePath
         self.thumbnailPath = thumbnailPath
         self.protected = protected
+        self.flagged = flagged
     }
     
     var isCheckedOut: Bool {

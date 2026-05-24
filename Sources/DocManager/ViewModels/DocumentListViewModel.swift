@@ -60,6 +60,36 @@ final class DocumentListViewModel: ObservableObject {
         guard let inboxID = inboxFolderID else { return 0 }
         return (try? storage.getDocumentsInFolder(folderID: inboxID).count) ?? 0
     }
+    @Published var isShowingFlagged = false
+    var flaggedDocumentCount: Int {
+        storage.getAllDocumentsRecursive().filter { $0.flagged }.count
+    }
+
+    func navigateToFlagged() {
+        folderPath.removeAll()
+        currentFolder = nil
+        isShowingTemplates = false
+        isShowingInbox = false
+        isShowingFlagged = true
+        documents = storage.getAllDocumentsRecursive().filter { $0.flagged }
+        isShowingAllDocuments = false
+        recordNavigation(.flagged)
+    }
+
+    func toggleFlag(_ document: Document) {
+        do {
+            var updated = document
+            updated.flagged.toggle()
+            try storage.updateDocument(updated)
+            refreshDocuments()
+            if let fresh = storage.getDocument(id: document.id) {
+                selectedDocument = fresh
+                documentRefreshToken += 1
+            }
+        } catch {
+            errorMessage = "Failed to toggle flag: \(error.localizedDescription)"
+        }
+    }
 
     func getTemplatesFolderID() -> UUID? {
         ensureTemplatesFolderExists()
@@ -85,9 +115,10 @@ final class DocumentListViewModel: ObservableObject {
     private var navigationIndex = -1
 
     enum SidebarNavigation: Hashable {
+        case flagged
+        case inbox
         case allDocuments
         case templates
-        case inbox
         case folder(Folder)
     }
 
@@ -167,7 +198,12 @@ final class DocumentListViewModel: ObservableObject {
         ensureTemplatesFolderExists()
         ensureInboxFolderExists()
         
-        if isShowingInbox, let inboxID = inboxFolderID {
+        if isShowingFlagged {
+            documents = storage.getAllDocumentsRecursive().filter { $0.flagged }
+            isShowingAllDocuments = false
+            isShowingTemplates = false
+            isShowingInbox = false
+        } else if isShowingInbox, let inboxID = inboxFolderID {
             documents = (try? storage.getDocumentsInFolder(folderID: inboxID)) ?? []
             isShowingAllDocuments = false
             isShowingTemplates = false
@@ -231,6 +267,7 @@ final class DocumentListViewModel: ObservableObject {
         currentFolder = nil
         isShowingTemplates = false
         isShowingInbox = false
+        isShowingFlagged = false
         recordNavigation(.allDocuments)
         refreshDocuments()
     }
@@ -369,6 +406,12 @@ final class DocumentListViewModel: ObservableObject {
     private func applyHistoryEntry() {
         guard navigationIndex >= 0, navigationIndex < navigationHistory.count else { return }
         switch navigationHistory[navigationIndex] {
+        case .flagged:
+            folderPath.removeAll()
+            currentFolder = nil
+            isShowingFlagged = true
+            isShowingTemplates = false
+            isShowingInbox = false
         case .allDocuments:
             folderPath.removeAll()
             currentFolder = nil

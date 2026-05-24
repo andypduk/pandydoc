@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: Hashable {
+    case flagged
     case inbox
     case allDocuments
     case templates
@@ -135,9 +136,13 @@ struct ContentView: View {
             NotificationCenter.default.addObserver(
                 forName: .navigateToInbox, object: nil, queue: .main
             ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToInbox() } }
+            NotificationCenter.default.addObserver(
+                forName: .navigateToFlagged, object: nil, queue: .main
+            ) { [weak viewModel] _ in Task { @MainActor in viewModel?.navigateToFlagged() } }
         }
         .onChange(of: sidebarSelection) { _, newSelection in
             switch newSelection {
+            case .flagged: viewModel.navigateToFlagged()
             case .inbox: viewModel.navigateToInbox()
             case .allDocuments, .none: viewModel.navigateToRoot()
             case .templates: viewModel.navigateToTemplates()
@@ -147,6 +152,8 @@ struct ContentView: View {
         .onChange(of: viewModel.currentFolder) { _, _ in
             if let folder = viewModel.currentFolder {
                 sidebarSelection = .folder(folder)
+            } else if viewModel.isShowingFlagged {
+                sidebarSelection = .flagged
             } else if viewModel.isShowingInbox {
                 sidebarSelection = .inbox
             } else if viewModel.isShowingTemplates {
@@ -231,6 +238,31 @@ struct ContentView: View {
                         Label("Import Document...", systemImage: "square.and.arrow.down")
                     }
                     Divider()
+                    Button(action: { viewModel.refreshDocuments() }) {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Image(systemName: viewModel.isShowingFlagged ? "flag.fill" : "flag")
+                        .foregroundColor(.accentColor)
+                        .frame(width: 20)
+                    Text("Flagged")
+                        .font(.body)
+                        .fontWeight(viewModel.isShowingFlagged ? .medium : .regular)
+                    Spacer()
+                    if viewModel.flaggedDocumentCount > 0 {
+                        Text("\(viewModel.flaggedDocumentCount)")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                }
+                .tag(SidebarItem.flagged)
+                .contextMenu {
                     Button(action: { viewModel.refreshDocuments() }) {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
@@ -608,6 +640,10 @@ struct ContentView: View {
         }
 
         Divider()
+
+        Button(action: { viewModel.toggleFlag(document) }) {
+            Label(document.flagged ? "Unflag" : "Flag", systemImage: document.flagged ? "flag.fill" : "flag")
+        }
 
         Button(action: { viewModel.startRename(document) }) {
             Label("Rename", systemImage: "pencil")

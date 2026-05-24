@@ -39,6 +39,12 @@ struct DocumentRowView: View {
             
             Spacer()
             
+            if document.flagged {
+                Image(systemName: "flag.fill")
+                    .foregroundColor(.red)
+                    .font(.caption)
+            }
+
             if document.isCheckedOut {
                 Image(systemName: "pencil")
                     .foregroundColor(.blue)

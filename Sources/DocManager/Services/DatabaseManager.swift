@@ -49,6 +49,7 @@ final class DatabaseManager {
     private let thumbnailPath = SQLite.Expression<String?>("thumbnail_path")
     private let parentIDCol = SQLite.Expression<String?>("parent_id")
     private let docProtected = SQLite.Expression<Bool>("protected")
+    private let flagged = SQLite.Expression<Bool>("flagged")
 
     private let folders = Table("folders")
     private let folderId = SQLite.Expression<String>("id")
@@ -181,8 +182,9 @@ final class DatabaseManager {
         // Always try to add protected columns (fails silently if they exist)
         addColumnIfNotExists(db: db, tableName: "documents", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
         addColumnIfNotExists(db: db, tableName: "folders", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
+        addColumnIfNotExists(db: db, tableName: "documents", columnName: "flagged", type: "BOOLEAN", defaultValue: "0")
 
-        if schemaVersion == "3" {
+        if schemaVersion == "4" {
             return
         }
 
@@ -237,12 +239,13 @@ final class DatabaseManager {
         addColumnIfNotExists(db: db, tableName: "documents", columnName: "parent_id", type: "TEXT", defaultValue: "NULL")
         addColumnIfNotExists(db: db, tableName: "documents", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
         addColumnIfNotExists(db: db, tableName: "folders", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
+        addColumnIfNotExists(db: db, tableName: "documents", columnName: "flagged", type: "BOOLEAN", defaultValue: "0")
 
         try? migrateFromJSON(db: db)
 
         try db.run(metadata.insert(or: .replace,
             metaKey <- "schema_version",
-            metaValue <- "3"
+            metaValue <- "4"
         ))
     }
     
@@ -304,7 +307,8 @@ final class DatabaseManager {
             parentIDCol <- document.parentID?.uuidString,
             filePath <- document.filePath,
             thumbnailPath <- document.thumbnailPath,
-            docProtected <- document.protected
+            docProtected <- document.protected,
+            flagged <- document.flagged
         )
         try db.run(insert)
     }
@@ -328,7 +332,8 @@ final class DatabaseManager {
             parentIDCol <- document.parentID?.uuidString,
             filePath <- document.filePath,
             thumbnailPath <- document.thumbnailPath,
-            docProtected <- document.protected
+            docProtected <- document.protected,
+            flagged <- document.flagged
         ))
     }
     
@@ -458,7 +463,8 @@ final class DatabaseManager {
             parentID: row[parentIDCol].flatMap { UUID(uuidString: $0) },
             filePath: row[filePath],
             thumbnailPath: row[thumbnailPath],
-            protected: row[docProtected]
+            protected: row[docProtected],
+            flagged: row[flagged]
         )
     }
     
