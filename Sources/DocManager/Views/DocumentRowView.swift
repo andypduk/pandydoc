@@ -4,71 +4,54 @@ import UniformTypeIdentifiers
 struct DocumentRowView: View {
     let document: Document
     @ObservedObject var viewModel: DocumentListViewModel
+    @State private var isHovered = false
     
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
-            documentIcon
+            fileTypeBadge
             
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(document.name)
                     .font(DesignTokens.Typography.bodyStyle())
                     .lineLimit(1)
                 
-                HStack(spacing: DesignTokens.Spacing.xs) {
-                    Circle()
-                        .fill(statusColor)
-                        .frame(width: 6, height: 6)
-                        .shadow(color: statusColor.opacity(0.4), radius: document.isCheckedOut ? 3 : 0)
+                HStack(spacing: 6) {
+                    statusPill
                     
-                    Text(statusText)
-                        .font(DesignTokens.Typography.metadataStyle())
-                        .foregroundColor(.secondary)
+                    if !document.tags.isEmpty {
+                        tagDots
+                    }
                     
-                    Text("·")
-                        .font(DesignTokens.Typography.metadataStyle())
+                    if viewModel.isShowingAllDocuments,
+                       let folderName = viewModel.folderName(for: document) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "folder")
+                                .font(.caption2)
+                            Text(folderName)
+                                .font(.caption2)
+                        }
                         .foregroundColor(.secondary)
-                    
-                    Text("v\(document.currentVersion)")
-                        .font(DesignTokens.Typography.metadataStyle())
-                        .foregroundColor(.secondary)
-                }
-
-                if viewModel.isShowingAllDocuments,
-                   let folderName = viewModel.folderName(for: document) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "folder")
-                            .font(.caption2)
-                            .foregroundColor(.accentColor)
-                        Text(folderName)
-                            .font(.caption2)
-                            .foregroundColor(.accentColor)
                     }
                 }
             }
             
             Spacer()
             
-            if document.flagged {
-                Image(systemName: "flag.fill")
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-
-            if document.isLocked {
-                Image(systemName: "lock.fill")
-                    .foregroundColor(DesignTokens.Colors.statusLocked)
-                    .font(.caption)
-            }
-
-            if document.protected {
-                Image(systemName: "shield.fill")
-                    .foregroundColor(.orange)
-                    .font(.caption)
+            if isHovered {
+                hoverActions
+                    .transition(.opacity)
+            } else {
+                staticIndicators
             }
         }
-        .padding(.vertical, DesignTokens.Spacing.sm)
+        .padding(.vertical, DesignTokens.Spacing.xs)
         .padding(.horizontal, DesignTokens.Spacing.sm)
         .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
         .onDrag {
             let provider = NSItemProvider()
             provider.suggestedName = document.fileName
@@ -89,6 +72,118 @@ struct DocumentRowView: View {
         }
     }
     
+    private var fileTypeBadge: some View {
+        let colors = DesignTokens.FileTypeColor.gradient(for: document.documentType)
+        let iconName = DesignTokens.FileTypeColor.icon(for: document.documentType)
+        
+        return ZStack {
+            RoundedRectangle(cornerRadius: DesignTokens.Corner.sm)
+                .fill(
+                    LinearGradient(
+                        colors: colors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 28, height: 34)
+            
+            Image(systemName: iconName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+        }
+    }
+    
+    private var statusPill: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: 5, height: 5)
+            Text(statusText)
+                .font(.system(size: 10, weight: .medium))
+        }
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(Color.secondary.opacity(0.08))
+        .cornerRadius(4)
+    }
+    
+    private var tagDots: some View {
+        HStack(spacing: 3) {
+            ForEach(Array(document.tags.prefix(3)), id: \.self) { tag in
+                Circle()
+                    .fill(tagColor(for: tag))
+                    .frame(width: 5, height: 5)
+            }
+            if document.tags.count > 3 {
+                Text("+\(document.tags.count - 3)")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private var staticIndicators: some View {
+        HStack(spacing: 6) {
+            if document.flagged {
+                Image(systemName: "flag.fill")
+                    .foregroundColor(.red)
+                    .font(.caption)
+            }
+            if document.isLocked {
+                Image(systemName: "lock.fill")
+                    .foregroundColor(DesignTokens.Colors.statusLocked)
+                    .font(.caption)
+            }
+            if document.protected {
+                Image(systemName: "shield.fill")
+                    .foregroundColor(.orange)
+                    .font(.caption)
+            }
+        }
+    }
+    
+    private var hoverActions: some View {
+        HStack(spacing: 4) {
+            Button(action: { viewModel.openDocument(document: document) }) {
+                Image(systemName: "arrow.up.right.square")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+            .disabled(document.isLocked)
+            .help("Open")
+            
+            if document.isAvailable {
+                Button(action: { viewModel.checkOut(document: document) }) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.secondary)
+                .help("Check Out")
+            }
+            
+            if document.isCheckedOut && document.checkedOutBy == NSFullUserName() {
+                Button(action: { viewModel.quickCheckIn(document: document) }) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.secondary)
+                .help("Check In")
+            }
+            
+            Button(action: { viewModel.startRename(document) }) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+            .help("Rename")
+        }
+    }
+    
     private var statusColor: Color {
         switch document.status {
         case .available: return DesignTokens.Colors.statusAvailable
@@ -97,38 +192,19 @@ struct DocumentRowView: View {
         }
     }
     
-    private var documentIcon: some View {
-        let colors = DesignTokens.FileTypeColor.gradient(for: document.documentType)
-        let iconName = DesignTokens.FileTypeColor.icon(for: document.documentType)
-        
-        return ZStack {
-            RoundedRectangle(cornerRadius: DesignTokens.Corner.md)
-                .fill(
-                    LinearGradient(
-                        colors: colors,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 32, height: 40)
-                .shadow(color: colors[0].opacity(0.3), radius: 4, x: 0, y: 2)
-            
-            Image(systemName: iconName)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-        }
-    }
-    
     private var statusText: String {
         switch document.status {
         case .available: return "Available"
         case .checkedOut:
-            if document.checkedOutBy == NSFullUserName() {
-                return "Checked out by you"
-            }
-            return "Checked out"
+            return document.checkedOutBy == NSFullUserName() ? "Checked out" : "Checked out"
         case .locked: return "Locked"
         }
+    }
+    
+    private func tagColor(for tag: String) -> Color {
+        let colors: [Color] = [.blue, .purple, .orange, .green, .pink, .cyan]
+        let hash = tag.hashValue
+        return colors[abs(hash) % colors.count]
     }
     
     @ViewBuilder

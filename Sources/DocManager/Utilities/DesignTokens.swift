@@ -7,9 +7,11 @@ enum DesignTokens {
         static let statusLocked = Color(red: 1.00, green: 0.23, blue: 0.19)
         static let selectionBackground = Color.accentColor.opacity(0.08)
         static let separatorThin = Color.black.opacity(0.08)
-        static let cardBackground = Color(NSColor.windowBackgroundColor)
+        static let cardBackground = Color(NSColor.controlBackgroundColor)
         static let tagChipBackground = Color.accentColor.opacity(0.1)
         static let badgeBackground = Color.accentColor.opacity(0.2)
+        static let sidebarCardBackground = Color(NSColor.controlBackgroundColor)
+        static let statsBarBackground = Color(NSColor.controlBackgroundColor)
     }
     
     enum FileTypeColor {
@@ -63,6 +65,7 @@ enum DesignTokens {
         static let md: CGFloat = 8
         static let lg: CGFloat = 10
         static let xl: CGFloat = 12
+        static let xxl: CGFloat = 16
     }
     
     enum Typography {
@@ -77,6 +80,12 @@ enum DesignTokens {
         }
         static func labelStyle() -> Font {
             Font.caption2.weight(.semibold)
+        }
+        static func statsNumberStyle() -> Font {
+            Font.system(size: 16, weight: .bold, design: .rounded)
+        }
+        static func statsLabelStyle() -> Font {
+            Font.system(size: 10, weight: .medium, design: .rounded)
         }
     }
 }

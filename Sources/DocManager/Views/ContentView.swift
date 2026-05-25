@@ -21,10 +21,14 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 180, ideal: 220)
+                .navigationSplitViewColumnWidth(min: 200, ideal: 240)
         } content: {
-            documentList
-                .navigationSplitViewColumnWidth(min: 280, ideal: 350)
+            VStack(spacing: 0) {
+                statsBar
+                Divider()
+                documentList
+            }
+            .navigationSplitViewColumnWidth(min: 280, ideal: 350)
         } detail: {
             detailView
                 .navigationSplitViewColumnWidth(min: 320, ideal: 450)
@@ -203,160 +207,93 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        VStack(spacing: 0) {
-            appBranding
-            Divider()
-            List(selection: $sidebarSelection) {
-            Section {
-                Text("Library")
-                    .font(DesignTokens.Typography.labelStyle())
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
-                    .tracking(0.5)
-                    .padding(.horizontal, DesignTokens.Spacing.md)
-                    .padding(.bottom, DesignTokens.Spacing.xs)
-                
-                sidebarItem(icon: "tray.fill", label: "Inbox", tag: SidebarItem.inbox,
-                    badge: viewModel.inboxDocumentCount > 0 ? "\(viewModel.inboxDocumentCount)" : nil,
-                    badgeColor: .orange,
-                    isSelected: viewModel.isShowingInbox,
-                    onDrop: { handleDropToFolder(providers: $0, targetFolderID: viewModel.getInboxFolderID()) })
-                
-                sidebarItem(icon: "flag.fill", label: "Flagged", tag: SidebarItem.flagged,
-                    badge: viewModel.flaggedDocumentCount > 0 ? "\(viewModel.flaggedDocumentCount)" : nil,
-                    badgeColor: .red,
-                    isSelected: viewModel.isShowingFlagged)
-                
-                sidebarItem(icon: "house.fill", label: "All Documents", tag: SidebarItem.allDocuments,
-                    badge: viewModel.checkedOutCount > 0 ? "\(viewModel.checkedOutCount)" : nil,
-                    badgeColor: .blue,
-                    isSelected: viewModel.isShowingAllDocuments,
-                    onDrop: { handleDropToFolder(providers: $0, targetFolderID: nil) })
-                
-                sidebarItem(icon: "doc.on.doc.fill", label: "Templates", tag: SidebarItem.templates,
-                    isSelected: viewModel.isShowingTemplates)
-            }
-
-            Section {
-                FolderTreeView(nodes: viewModel.folderTree, selection: $sidebarSelection, expandedFolders: $expandedFolders,
-                    onDropFile: { folder, providers in
-                        handleMixedDrop(providers: providers, folder: folder)
-                    },
-                    onDeleteFolder: { folder in
-                        viewModel.deleteFolder(folder)
-                    },
-                    onRenameFolder: { folder in
-                        viewModel.startRenameFolder(folder)
-                    },
-                    onArchiveFolder: { folder in
-                        viewModel.archiveFolder(folder)
-                    },
-                    onNewSubfolder: { folder in
-                        startCreateFolder(parentID: folder.id)
-                    },
-                    onToggleProtection: { folder in
-                        viewModel.toggleFolderProtection(folder)
-                    },
-                    onMoveFolder: { folder in
-                        viewModel.moveFolder(folder)
-                    },
-                    isCreatingFolder: $isCreatingFolder,
-                    newFolderName: $viewModel.newFolderName,
-                    newFolderParentID: $viewModel.newFolderParentID,
-                    folderFieldFocused: $folderFieldFocused,
-                    onCreateFolder: { name, parentID in
-                        viewModel.createFolder(name: name, parentID: parentID)
-                        if let parentID {
-                            expandedFolders.insert(parentID)
-                        }
-                        viewModel.newFolderName = ""
-                        isCreatingFolder = false
-                        viewModel.newFolderParentID = nil
-                    },
-                    onCancelCreate: {
-                        isCreatingFolder = false
-                        viewModel.newFolderName = ""
-                        viewModel.newFolderParentID = nil
-                    },
-                    showFolderRenameAlert: $viewModel.showFolderRenameAlert,
-                    folderRenameText: $viewModel.folderRenameText,
-                    folderToRename: $viewModel.folderToRename,
-                    showDeleteFolderConfirmation: $viewModel.showDeleteFolderConfirmation,
-                    folderToDelete: $viewModel.folderToDelete,
-                    onPerformFolderRename: { viewModel.performFolderRename() },
-                    onConfirmDeleteFolder: { viewModel.confirmDeleteFolder() }
-                )
-            } header: {
-                HStack {
-                    Text("Folders")
-                    Spacer()
-                    Button(action: { startCreateFolder(parentID: nil) }) {
-                        Image(systemName: "folder.badge.plus")
-                            .font(.caption)
+        ScrollViewReader { _ in
+            ScrollView {
+                VStack(spacing: 8) {
+                    appBranding
+                    sidebarSection("Library") {
+                        sidebarItem(icon: "tray.fill", label: "Inbox", tag: SidebarItem.inbox,
+                            badge: viewModel.inboxDocumentCount > 0 ? "\(viewModel.inboxDocumentCount)" : nil,
+                            badgeColor: .orange,
+                            isSelected: viewModel.isShowingInbox,
+                            onDrop: { handleDropToFolder(providers: $0, targetFolderID: viewModel.getInboxFolderID()) })
+                        
+                        sidebarItem(icon: "flag.fill", label: "Flagged", tag: SidebarItem.flagged,
+                            badge: viewModel.flaggedDocumentCount > 0 ? "\(viewModel.flaggedDocumentCount)" : nil,
+                            badgeColor: .red,
+                            isSelected: viewModel.isShowingFlagged)
+                        
+                        sidebarItem(icon: "house.fill", label: "All Documents", tag: SidebarItem.allDocuments,
+                            badge: viewModel.checkedOutCount > 0 ? "\(viewModel.checkedOutCount)" : nil,
+                            badgeColor: .blue,
+                            isSelected: viewModel.isShowingAllDocuments,
+                            onDrop: { handleDropToFolder(providers: $0, targetFolderID: nil) })
+                        
+                        sidebarItem(icon: "doc.on.doc.fill", label: "Templates", tag: SidebarItem.templates,
+                            isSelected: viewModel.isShowingTemplates)
                     }
-                    .buttonStyle(.plain)
-                    .help("New Folder")
-                }
-            }
-
-            if !viewModel.allTags.isEmpty {
-                Section {
-                    ForEach(viewModel.allTags, id: \.tag) { tagInfo in
-                        HStack(spacing: 6) {
-                            Image(systemName: viewModel.selectedTags.contains(tagInfo.tag) ? "tag.fill" : "tag")
-                                .foregroundColor(viewModel.selectedTags.contains(tagInfo.tag) ? .accentColor : .secondary)
-                                .frame(width: 16)
-                            Text(tagInfo.tag.capitalized)
-                                .font(.body)
-                                .lineLimit(1)
-                            Spacer()
-                            Text("\(tagInfo.count)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            viewModel.toggleTagFilter(tagInfo.tag)
-                        }
-                        .contextMenu {
-                            Button(action: {
-                                viewModel.selectedTags = [tagInfo.tag]
-                                viewModel.searchDocuments()
-                            }) {
-                                Label("Filter by this tag", systemImage: "tag")
+                    
+                    if !viewModel.allTags.isEmpty {
+                        sidebarSection("Tags") {
+                            ForEach(viewModel.allTags, id: \.tag) { tagInfo in
+                                HStack(spacing: 6) {
+                                    Image(systemName: viewModel.selectedTags.contains(tagInfo.tag) ? "tag.fill" : "tag")
+                                        .foregroundColor(viewModel.selectedTags.contains(tagInfo.tag) ? .accentColor : .secondary)
+                                        .frame(width: 16)
+                                    Text(tagInfo.tag.capitalized)
+                                        .font(.body)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Text("\(tagInfo.count)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    viewModel.toggleTagFilter(tagInfo.tag)
+                                }
+                            }
+                            if !viewModel.selectedTags.isEmpty {
+                                Button(action: { viewModel.clearTagFilters() }) {
+                                    HStack {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
+                                        Text("Clear filters")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
-                    if !viewModel.selectedTags.isEmpty {
-                        Button(action: { viewModel.clearTagFilters() }) {
-                            HStack {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.secondary)
-                                Text("Clear filters")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } header: {
-                    HStack {
-                        Text("Tags")
-                        Spacer()
-                        Button(action: { viewModel.showTagCloud = true }) {
-                            Image(systemName: "circle.grid.2x2")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.plain)
-                        .help("Show Tag Cloud")
-                    }
                 }
+                .padding(.horizontal, DesignTokens.Spacing.sm)
+                .padding(.vertical, DesignTokens.Spacing.sm)
             }
         }
-        .listStyle(SidebarListStyle())
-        }
-        .sheet(isPresented: $viewModel.showTagCloud) {
-            TagCloudView(viewModel: viewModel)
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+    
+    @ViewBuilder
+    private func sidebarSection(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(DesignTokens.Typography.labelStyle())
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .padding(.horizontal, DesignTokens.Spacing.sm)
+                .padding(.top, DesignTokens.Spacing.xs)
+                .padding(.bottom, 2)
+            
+            VStack(spacing: 1) {
+                content()
+            }
+            .padding(.vertical, 2)
+            .padding(.horizontal, 2)
+            .background(DesignTokens.Colors.sidebarCardBackground)
+            .cornerRadius(DesignTokens.Corner.md)
         }
     }
 
@@ -366,26 +303,27 @@ struct ContentView: View {
                 RoundedRectangle(cornerRadius: DesignTokens.Corner.md)
                     .fill(
                         LinearGradient(
-                            colors: [Color(red: 0.2, green: 0.2, blue: 0.2), Color(red: 0.33, green: 0.33, blue: 0.33)],
+                            colors: [Color(red: 0.95, green: 0.35, blue: 0.15), Color(red: 1.00, green: 0.60, blue: 0.20)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 24, height: 24)
+                    .frame(width: 28, height: 28)
+                    .shadow(color: Color(red: 0.95, green: 0.35, blue: 0.15).opacity(0.3), radius: 4, x: 0, y: 2)
                 
                 Image(systemName: "pawprint.fill")
-                    .font(.system(size: 14))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.white)
             }
             
             Text("PandyDoc")
-                .font(.title3.weight(.bold))
-                .tracking(-0.2)
+                .font(.headline.weight(.bold))
+                .tracking(-0.3)
             
             Spacer()
         }
-        .padding(.horizontal, DesignTokens.Spacing.md)
-        .padding(.vertical, DesignTokens.Spacing.sm)
+        .padding(.horizontal, DesignTokens.Spacing.sm)
+        .padding(.vertical, DesignTokens.Spacing.xs)
     }
 
     private func sidebarItem(
@@ -399,26 +337,35 @@ struct ContentView: View {
     ) -> some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
             Image(systemName: icon)
-                .foregroundColor(.accentColor)
+                .foregroundColor(isSelected ? .white : .accentColor)
                 .frame(width: 20)
             Text(label)
                 .font(.body)
                 .fontWeight(isSelected ? .medium : .regular)
+                .foregroundColor(isSelected ? .white : .primary)
             Spacer()
             if let badge {
                 Text(badge)
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(badgeColor)
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(isSelected ? .white : badgeColor)
                     .padding(.horizontal, DesignTokens.Spacing.xs)
                     .padding(.vertical, 1)
-                    .background(badgeColor.opacity(0.15))
-                    .cornerRadius(DesignTokens.Corner.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(isSelected ? Color.white.opacity(0.2) : badgeColor.opacity(0.15))
+                    )
             }
         }
-        .tag(tag)
         .padding(.horizontal, DesignTokens.Spacing.sm)
         .padding(.vertical, DesignTokens.Spacing.xs)
+        .background(
+            isSelected ? Color.accentColor : Color.clear
+        )
+        .cornerRadius(DesignTokens.Corner.sm)
         .contentShape(Rectangle())
+        .onTapGesture {
+            sidebarSelection = tag
+        }
         .onDrop(of: [.fileURL, .plainText], isTargeted: nil) { providers in
             onDrop?(providers)
             return true
@@ -442,6 +389,42 @@ struct ContentView: View {
         isCreatingFolder = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             folderFieldFocused = true
+        }
+    }
+
+    private var statsBar: some View {
+        HStack(spacing: DesignTokens.Spacing.md) {
+            statItem(icon: "doc.text.fill", value: "\(viewModel.documents.count)", label: "Documents")
+            statItem(icon: "folder.fill", value: "\(viewModel.folders.count)", label: "Folders")
+            
+            Divider()
+                .frame(height: 20)
+            
+            if viewModel.checkedOutCount > 0 {
+                statItem(icon: "pencil.circle.fill", value: "\(viewModel.checkedOutCount)", label: "Checked Out", color: .blue)
+            }
+            if viewModel.flaggedDocumentCount > 0 {
+                statItem(icon: "flag.fill", value: "\(viewModel.flaggedDocumentCount)", label: "Flagged", color: .red)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.xs)
+        .background(DesignTokens.Colors.statsBarBackground)
+    }
+    
+    private func statItem(icon: String, value: String, label: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(color)
+            Text(value)
+                .font(DesignTokens.Typography.statsNumberStyle())
+                .foregroundColor(.primary)
+            Text(label)
+                .font(DesignTokens.Typography.statsLabelStyle())
+                .foregroundColor(.secondary)
         }
     }
 
@@ -471,26 +454,41 @@ struct ContentView: View {
             return true
         }
         .overlay {
-            if viewModel.importProgress != nil {
-                importProgressOverlay
-            } else if viewModel.documents.isEmpty && !viewModel.isLoading {
-                ContentUnavailableView(
-                    viewModel.searchQuery.isEmpty ? emptyTitle : "No Results",
-                    systemImage: emptyIcon,
-                    description: Text(viewModel.searchQuery.isEmpty
-                        ? emptyDescription
-                        : "No documents match \"\(viewModel.searchQuery)\"")
-                )
+            if viewModel.documents.isEmpty && !viewModel.isLoading {
+                emptyStateView
             }
         }
     }
 
-    private var emptyIcon: String {
-        if viewModel.searchQuery.isEmpty && viewModel.isShowingAllDocuments {
-            return "pawprint.fill"
+    private var emptyStateView: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            Image(systemName: emptyIcon)
+                .font(.system(size: 48))
+                .foregroundColor(.secondary.opacity(0.5))
+            
+            Text(viewModel.searchQuery.isEmpty ? emptyTitle : "No Results")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            Text(viewModel.searchQuery.isEmpty ? emptyDescription : "No documents match \"\(viewModel.searchQuery)\"")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            if viewModel.searchQuery.isEmpty && viewModel.isShowingAllDocuments {
+                Button(action: { showImportSheet = true }) {
+                    Label("Import Documents", systemImage: "square.and.arrow.down")
+                }
+                .buttonStyle(.borderedProminent)
+            }
         }
+        .padding(DesignTokens.Spacing.xxl)
+    }
+
+    private var emptyIcon: String {
         if viewModel.isShowingTemplates { return "doc.on.doc" }
-        return "doc"
+        if viewModel.isShowingAllDocuments { return "tray.and.arrow.down" }
+        return "folder.badge.plus"
     }
 
     private var emptyTitle: String {
@@ -503,21 +501,6 @@ struct ContentView: View {
         if viewModel.isShowingTemplates { return "Drag documents here or use \"Add to Templates\" to add templates" }
         if viewModel.isShowingAllDocuments { return "Import documents to get started" }
         return "This folder is empty"
-    }
-
-    private var importProgressOverlay: some View {
-        VStack(spacing: 12) {
-            ProgressView(value: viewModel.importProgress ?? 0)
-                .progressViewStyle(.linear)
-                .frame(width: 280)
-
-            Text("Importing \(viewModel.importCurrentFile) of \(viewModel.importTotalFiles) files (\(Int((viewModel.importProgress ?? 0) * 100))%)")
-                .font(.body)
-                .foregroundColor(.secondary)
-        }
-        .padding(24)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
 
     private var detailView: some View {
