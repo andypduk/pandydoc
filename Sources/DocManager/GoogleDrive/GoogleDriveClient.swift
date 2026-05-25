@@ -133,7 +133,7 @@ final class GoogleDriveClient: ObservableObject {
             return remainder.components(separatedBy: "/").first
         }
         if path.count >= 33 && path.count <= 50 {
-            return path.lastPathComponent
+            return (path as NSString).lastPathComponent
         }
         return nil
     }
