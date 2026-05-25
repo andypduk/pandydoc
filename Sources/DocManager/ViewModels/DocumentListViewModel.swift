@@ -44,6 +44,9 @@ final class DocumentListViewModel: ObservableObject {
     @Published var showArchiveSheet = false
     @Published var archiveFolder: Folder?
     @Published var archiveProgress: String?
+    @Published var importProgress: Double?
+    @Published var importCurrentFile: Int = 0
+    @Published var importTotalFiles: Int = 0
     @Published var newFolderParentID: UUID?
     @Published var pendingImportURL: URL?
     @Published var pendingImportIsFolder = false
