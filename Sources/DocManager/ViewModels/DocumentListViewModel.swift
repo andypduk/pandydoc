@@ -1084,6 +1084,16 @@ final class DocumentListViewModel: ObservableObject {
         }
 
         let items = enumerator.allObjects.compactMap { $0 as? URL }
+        let totalFiles = items.filter {
+            (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == false
+        }.count
+
+        await MainActor.run {
+            importTotalFiles = totalFiles
+            importCurrentFile = 0
+            importProgress = totalFiles > 0 ? 0 : nil
+        }
+
         for fileURL in items {
             let relativePath = String(fileURL.path.dropFirst(folderURL.path.count + 1))
             let relativeDir = (relativePath as NSString).deletingLastPathComponent
@@ -1105,6 +1115,11 @@ final class DocumentListViewModel: ObservableObject {
                     let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
                     await performFileImportAsync(fileURL: fileURL, to: parentID)
                     importCount += 1
+
+                    await MainActor.run {
+                        importCurrentFile = importCount
+                        importProgress = totalFiles > 0 ? Double(importCount) / Double(totalFiles) : 1.0
+                    }
                 }
             } catch {
                 errorCount += 1
@@ -1112,6 +1127,7 @@ final class DocumentListViewModel: ObservableObject {
         }
 
         await MainActor.run {
+            importProgress = nil
             refreshDocuments()
             if importCount > 0 {
                 if errorCount > 0 {
