@@ -171,6 +171,39 @@ final class DocumentListViewModel: ObservableObject {
     private let checkInOut: CheckInOutProtocol
     private let editor: DocumentEditorService
     
+    private var cachedAllDocuments: [Document]?
+    private var cachedAllFolders: [Folder]?
+    private var cachedAllTags: [(tag: String, count: Int)]?
+    private var cacheToken: Int = 0
+    
+    private func invalidateCache() {
+        cacheToken += 1
+        cachedAllDocuments = nil
+        cachedAllFolders = nil
+        cachedAllTags = nil
+    }
+    
+    private func getAllDocumentsCached() -> [Document] {
+        if let cached = cachedAllDocuments { return cached }
+        let docs = storage.getAllDocumentsRecursive()
+        cachedAllDocuments = docs
+        return docs
+    }
+    
+    private func getAllFoldersCached() -> [Folder] {
+        if let cached = cachedAllFolders { return cached }
+        let folders = storage.getAllFolders()
+        cachedAllFolders = folders
+        return folders
+    }
+    
+    private func getAllTagsCached() -> [(tag: String, count: Int)] {
+        if let cached = cachedAllTags { return cached }
+        let tags = storage.getAllTags()
+        cachedAllTags = tags
+        return tags
+    }
+    
     init(
         storage: DocumentStorageProtocol = DocumentStorage.shared,
         checkInOut: CheckInOutProtocol = CheckInOutService.shared,
@@ -202,7 +235,7 @@ final class DocumentListViewModel: ObservableObject {
         ensureInboxFolderExists()
         
         if isShowingFlagged {
-            documents = storage.getAllDocumentsRecursive().filter { $0.flagged }
+            documents = getAllDocumentsCached().filter { $0.flagged }
             isShowingAllDocuments = false
             isShowingTemplates = false
             isShowingInbox = false
@@ -218,7 +251,7 @@ final class DocumentListViewModel: ObservableObject {
             isShowingTemplates = false
             isShowingInbox = false
         } else {
-            documents = storage.getAllDocumentsRecursive()
+            documents = getAllDocumentsCached()
             if let templatesID = templatesFolderID {
                 documents = documents.filter { $0.parentID != templatesID }
             }
@@ -232,8 +265,8 @@ final class DocumentListViewModel: ObservableObject {
         }
         folders = (try? storage.getFolders(parentID: currentFolder?.id)) ?? []
         folders = folders.filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
-        allFolders = storage.getAllFolders().filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
-        allTags = storage.getAllTags()
+        allFolders = getAllFoldersCached().filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
+        allTags = getAllTagsCached()
         applyFilters()
         if let sel = selectedDocument, let updated = documents.first(where: { $0.id == sel.id }) {
             selectedDocument = updated
@@ -460,6 +493,7 @@ final class DocumentListViewModel: ObservableObject {
             }
             let folder = try storage.createFolder(name: name, parentID: actualParent)
             print("Folder created: \(folder.id)")
+            invalidateCache()
             refreshDocuments()
         } catch {
             print("Folder creation failed: \(error)")
@@ -478,6 +512,7 @@ final class DocumentListViewModel: ObservableObject {
             let folderId = folder.id
             let descendants = collectDescendantIDs(of: folderId)
             try storage.deleteFolder(id: folder.id)
+            invalidateCache()
 
             if currentFolder?.id == folderId || descendants.contains(where: { $0 == currentFolder?.id }) {
                 navigateToRoot()
@@ -542,6 +577,7 @@ final class DocumentListViewModel: ObservableObject {
             var updated = folder
             updated.name = folderRenameText
             try storage.updateFolder(updated)
+            invalidateCache()
             refreshDocuments()
         } catch {
             errorMessage = "Rename failed: \(error.localizedDescription)"
@@ -742,6 +778,7 @@ final class DocumentListViewModel: ObservableObject {
         }
         do {
             try storage.deleteDocument(id: document.id)
+            invalidateCache()
             refreshDocuments()
             if selectedDocument?.id == document.id {
                 selectedDocument = nil
@@ -767,6 +804,7 @@ final class DocumentListViewModel: ObservableObject {
             var updated = document
             updated.tags.append(normalized)
             try storage.updateDocument(updated)
+            invalidateCache()
             refreshDocuments()
             if let fresh = storage.getDocument(id: document.id) {
                 selectedDocument = fresh
@@ -782,6 +820,7 @@ final class DocumentListViewModel: ObservableObject {
             var updated = document
             updated.tags.removeAll { $0 == tag }
             try storage.updateDocument(updated)
+            invalidateCache()
             refreshDocuments()
             if let fresh = storage.getDocument(id: document.id) {
                 selectedDocument = fresh
@@ -831,6 +870,7 @@ final class DocumentListViewModel: ObservableObject {
     func moveDocument(documentID: UUID, to folderID: UUID?) {
         do {
             try storage.moveDocument(documentID: documentID, to: folderID)
+            invalidateCache()
             refreshDocuments()
         } catch {
             errorMessage = error.localizedDescription
@@ -877,6 +917,7 @@ final class DocumentListViewModel: ObservableObject {
         }
         do {
             try storage.moveFolder(id: folder.id, to: targetParentID)
+            invalidateCache()
             refreshDocuments()
             showFolderMoveSheet = false
             folderToMove = nil
@@ -1048,6 +1089,7 @@ final class DocumentListViewModel: ObservableObject {
             )
             
             await MainActor.run {
+                invalidateCache()
                 refreshDocuments()
             }
         } catch {
@@ -1130,6 +1172,7 @@ final class DocumentListViewModel: ObservableObject {
 
         await MainActor.run {
             importProgress = nil
+            invalidateCache()
             refreshDocuments()
             if importCount > 0 {
                 if errorCount > 0 {
@@ -1197,6 +1240,7 @@ final class DocumentListViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
+                self?.invalidateCache()
                 self?.refreshDocuments()
             }
         }
@@ -1207,6 +1251,7 @@ final class DocumentListViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
+                self?.invalidateCache()
                 self?.refreshDocuments()
             }
         }
@@ -1218,6 +1263,7 @@ final class DocumentListViewModel: ObservableObject {
         ) { [weak self] notification in
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
+                self.invalidateCache()
                 self.refreshDocuments()
                 if let docID = notification.userInfo?["documentId"] as? UUID,
                    let fresh = self.storage.getDocument(id: docID) {
@@ -1234,6 +1280,7 @@ final class DocumentListViewModel: ObservableObject {
         ) { [weak self] notification in
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
+                self.invalidateCache()
                 if let docID = notification.userInfo?["documentId"] as? UUID,
                    let fresh = self.storage.getDocument(id: docID) {
                     self.selectedDocument = fresh
