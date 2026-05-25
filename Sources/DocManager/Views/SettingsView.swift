@@ -22,7 +22,7 @@ struct SettingsView: View {
     }()
     @State private var googleDriveClientID: String = UserDefaults.standard.string(forKey: "GoogleDriveClientID") ?? ""
     @State private var googleDriveClientSecret: String = UserDefaults.standard.string(forKey: "GoogleDriveClientSecret") ?? ""
-    @State private var googleDriveRedirectURI: String = UserDefaults.standard.string(forKey: "GoogleDriveRedirectURI") ?? "com.pandydoc://googledrive"
+    @State private var googleDriveRedirectURI: String = UserDefaults.standard.string(forKey: "GoogleDriveRedirectURI") ?? "http://localhost"
     @State private var showGoogleDriveSecret = false
     @State private var googleDriveTestResult: String?
     @State private var isGoogleDriveTesting = false
@@ -301,6 +301,18 @@ struct SettingsView: View {
             Section("OAuth2 Credentials") {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("To import from Google Drive, you need to create OAuth2 credentials in the Google Cloud Console.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("Setup steps:")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                    Text("1. Create OAuth2 credentials (Desktop app type)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("2. Configure OAuth consent screen — add your account as a test user")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("3. Use redirect URI: http://localhost")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Link("Google Cloud Console", destination: URL(string: "https://console.cloud.google.com/apis/credentials")!)
