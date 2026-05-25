@@ -12,8 +12,8 @@ final class GoogleDriveBrowserViewModel: ObservableObject {
     @Published var importCurrentFile = 0
     @Published var importTotalFiles = 0
 
-    private var folderPath: [GDriveItem] = []
-    private let documentVM: DocumentListViewModel
+    var folderPath: [GDriveItem] = []
+    let documentVM: DocumentListViewModel
 
     init(documentVM: DocumentListViewModel) {
         self.documentVM = documentVM
@@ -157,7 +157,8 @@ final class GoogleDriveBrowserViewModel: ObservableObject {
         if let ext = mimeTypeToExt[item.mimeType] {
             return ext
         }
-        if let nameExt = (item.name as NSString).pathExtension, !nameExt.isEmpty {
+        let nameExt = (item.name as NSString).pathExtension
+        if !nameExt.isEmpty {
             return ".\(nameExt)"
         }
         return ""

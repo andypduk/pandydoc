@@ -136,7 +136,8 @@ struct GoogleDriveLinkImportView: View {
         if let ext = mimeTypeToExt[item.mimeType] {
             return ext
         }
-        if let nameExt = (item.name as NSString).pathExtension, !nameExt.isEmpty {
+        let nameExt = (item.name as NSString).pathExtension
+        if !nameExt.isEmpty {
             return ".\(nameExt)"
         }
         return ""
