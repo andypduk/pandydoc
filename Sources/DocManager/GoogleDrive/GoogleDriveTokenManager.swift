@@ -84,7 +84,7 @@ final class GoogleDriveTokenManager: ObservableObject {
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "scope", value: "https://www.googleapis.com/auth/drive.readonly"),
             URLQueryItem(name: "access_type", value: "offline"),
-            URLQueryItem(name: "prompt", value: "consent")
+            URLQueryItem(name: "prompt", value: "consent select_account")
         ]
         return components.url!
     }
