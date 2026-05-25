@@ -110,6 +110,9 @@ struct ContentView: View {
         .sheet(isPresented: $showHelp) {
             HelpView(initialTab: helpInitialTab)
         }
+        .sheet(isPresented: $viewModel.showTagCloud) {
+            TagCloudView(viewModel: viewModel)
+        }
         .onAppear {
             viewModel.loadInitialData()
             NotificationCenter.default.addObserver(
@@ -233,6 +236,57 @@ struct ContentView: View {
                             isSelected: viewModel.isShowingTemplates)
                     }
                     
+                    sidebarSection("Folders") {
+                        FolderTreeView(nodes: viewModel.folderTree, selection: $sidebarSelection, expandedFolders: $expandedFolders,
+                            onDropFile: { folder, providers in
+                                handleMixedDrop(providers: providers, folder: folder)
+                            },
+                            onDeleteFolder: { folder in
+                                viewModel.deleteFolder(folder)
+                            },
+                            onRenameFolder: { folder in
+                                viewModel.startRenameFolder(folder)
+                            },
+                            onArchiveFolder: { folder in
+                                viewModel.archiveFolder(folder)
+                            },
+                            onNewSubfolder: { folder in
+                                startCreateFolder(parentID: folder.id)
+                            },
+                            onToggleProtection: { folder in
+                                viewModel.toggleFolderProtection(folder)
+                            },
+                            onMoveFolder: { folder in
+                                viewModel.moveFolder(folder)
+                            },
+                            isCreatingFolder: $isCreatingFolder,
+                            newFolderName: $viewModel.newFolderName,
+                            newFolderParentID: $viewModel.newFolderParentID,
+                            folderFieldFocused: $folderFieldFocused,
+                            onCreateFolder: { name, parentID in
+                                viewModel.createFolder(name: name, parentID: parentID)
+                                if let parentID {
+                                    expandedFolders.insert(parentID)
+                                }
+                                viewModel.newFolderName = ""
+                                isCreatingFolder = false
+                                viewModel.newFolderParentID = nil
+                            },
+                            onCancelCreate: {
+                                isCreatingFolder = false
+                                viewModel.newFolderName = ""
+                                viewModel.newFolderParentID = nil
+                            },
+                            showFolderRenameAlert: $viewModel.showFolderRenameAlert,
+                            folderRenameText: $viewModel.folderRenameText,
+                            folderToRename: $viewModel.folderToRename,
+                            showDeleteFolderConfirmation: $viewModel.showDeleteFolderConfirmation,
+                            folderToDelete: $viewModel.folderToDelete,
+                            onPerformFolderRename: { viewModel.performFolderRename() },
+                            onConfirmDeleteFolder: { viewModel.confirmDeleteFolder() }
+                        )
+                    }
+                    
                     if !viewModel.allTags.isEmpty {
                         sidebarSection("Tags") {
                             ForEach(viewModel.allTags, id: \.tag) { tagInfo in
@@ -265,6 +319,17 @@ struct ContentView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+                            
+                            Button(action: { viewModel.showTagCloud = true }) {
+                                HStack {
+                                    Image(systemName: "circle.grid.2x2")
+                                        .foregroundColor(.secondary)
+                                    Text("Show Tag Cloud")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
