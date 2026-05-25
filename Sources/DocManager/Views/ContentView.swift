@@ -11,6 +11,8 @@ enum SidebarItem: Hashable {
 struct ContentView: View {
     @StateObject private var viewModel = DocumentListViewModel()
     @State private var showImportSheet = false
+    @State private var showGoogleDriveBrowser = false
+    @State private var showGoogleDriveLinkImport = false
     @State private var showPrinterSetup = false
     @State private var isCreatingFolder = false
     @State private var sidebarSelection: SidebarItem? = .allDocuments
@@ -50,6 +52,12 @@ struct ContentView: View {
             case .failure(let error):
                 viewModel.errorMessage = error.localizedDescription
             }
+        }
+        .sheet(isPresented: $showGoogleDriveBrowser) {
+            GoogleDriveBrowserView(documentVM: viewModel)
+        }
+        .sheet(isPresented: $showGoogleDriveLinkImport) {
+            GoogleDriveLinkImportView().environmentObject(viewModel)
         }
         .alert("Folder Access Required", isPresented: .init(
             get: { viewModel.pendingImportURL != nil },
@@ -177,10 +185,20 @@ struct ContentView: View {
             .help("Forward")
         }
         ToolbarItem(placement: .primaryAction) {
-            Button(action: { showImportSheet = true }) {
+            Menu {
+                Button(action: { showImportSheet = true }) {
+                    Label("Import from Computer...", systemImage: "macwindow")
+                }
+                Button(action: { showGoogleDriveBrowser = true }) {
+                    Label("Import from Google Drive...", systemImage: "cloud.fill")
+                }
+                Button(action: { showGoogleDriveLinkImport = true }) {
+                    Label("Import from Google Drive Link...", systemImage: "link")
+                }
+            } label: {
                 Label("Import", systemImage: "square.and.arrow.down")
             }
-            .help("Import documents or folders")
+            .help("Import documents")
         }
         ToolbarItem(placement: .primaryAction) {
             Button(action: { showPrinterSetup = true }) {
