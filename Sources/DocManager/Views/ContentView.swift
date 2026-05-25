@@ -471,7 +471,9 @@ struct ContentView: View {
             return true
         }
         .overlay {
-            if viewModel.documents.isEmpty && !viewModel.isLoading {
+            if viewModel.importProgress != nil {
+                importProgressOverlay
+            } else if viewModel.documents.isEmpty && !viewModel.isLoading {
                 ContentUnavailableView(
                     viewModel.searchQuery.isEmpty ? emptyTitle : "No Results",
                     systemImage: emptyIcon,
@@ -501,6 +503,21 @@ struct ContentView: View {
         if viewModel.isShowingTemplates { return "Drag documents here or use \"Add to Templates\" to add templates" }
         if viewModel.isShowingAllDocuments { return "Import documents to get started" }
         return "This folder is empty"
+    }
+
+    private var importProgressOverlay: some View {
+        VStack(spacing: 12) {
+            ProgressView(value: viewModel.importProgress ?? 0)
+                .progressViewStyle(.linear)
+                .frame(width: 280)
+
+            Text("Importing \(viewModel.importCurrentFile) of \(viewModel.importTotalFiles) files (\(Int((viewModel.importProgress ?? 0) * 100))%)")
+                .font(.body)
+                .foregroundColor(.secondary)
+        }
+        .padding(24)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
 
     private var detailView: some View {
