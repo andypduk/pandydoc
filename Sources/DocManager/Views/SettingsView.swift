@@ -20,6 +20,10 @@ struct SettingsView: View {
         let stored = UserDefaults.standard.integer(forKey: "apiPort")
         return stored == 0 ? 8080 : stored
     }()
+    @State private var googleDriveClientID: String = UserDefaults.standard.string(forKey: "GoogleDriveClientID") ?? ""
+    @State private var googleDriveClientSecret: String = UserDefaults.standard.string(forKey: "GoogleDriveClientSecret") ?? ""
+    @State private var googleDriveRedirectURI: String = UserDefaults.standard.string(forKey: "GoogleDriveRedirectURI") ?? "com.pandydoc://googledrive"
+    @State private var showGoogleDriveSecret = false
 
     private let dbManager = DatabaseManager.shared
     private let fileManager = FileManager.default
@@ -66,6 +70,11 @@ struct SettingsView: View {
             apiSettings
                 .tabItem {
                     Label("API", systemImage: "network")
+                }
+
+            googleDriveSettings
+                .tabItem {
+                    Label("Google Drive", systemImage: "cloud.fill")
                 }
         }
         .frame(width: 480, height: 340)
@@ -278,6 +287,72 @@ struct SettingsView: View {
                     TextField("Port", value: $apiPort, formatter: NumberFormatter())
                         .frame(width: 80)
                         .onChange(of: apiPort) { UserDefaults.standard.set(apiPort, forKey: "apiPort") }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var googleDriveSettings: some View {
+        Form {
+            Section("OAuth2 Credentials") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("To import from Google Drive, you need to create OAuth2 credentials in the Google Cloud Console.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Link("Google Cloud Console", destination: URL(string: "https://console.cloud.google.com/apis/credentials")!)
+                        .font(.caption)
+                }
+                .padding(.vertical, 4)
+
+                LabeledContent("Client ID") {
+                    TextField("Enter Client ID", text: $googleDriveClientID)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 250)
+                        .onChange(of: googleDriveClientID) {
+                            UserDefaults.standard.set(googleDriveClientID, forKey: "GoogleDriveClientID")
+                        }
+                }
+
+                LabeledContent("Client Secret") {
+                    if showGoogleDriveSecret {
+                        TextField("Enter Client Secret", text: $googleDriveClientSecret)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 250)
+                            .onChange(of: googleDriveClientSecret) {
+                                UserDefaults.standard.set(googleDriveClientSecret, forKey: "GoogleDriveClientSecret")
+                            }
+                    } else {
+                        HStack {
+                            Text(googleDriveClientSecret.isEmpty ? "Not set" : String(repeating: "•", count: 20))
+                                .foregroundColor(googleDriveClientSecret.isEmpty ? .secondary : .primary)
+                            Button(showGoogleDriveSecret ? "Hide" : "Show") { showGoogleDriveSecret.toggle() }
+                        }
+                    }
+                }
+
+                LabeledContent("Redirect URI") {
+                    TextField("Enter Redirect URI", text: $googleDriveRedirectURI)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 250)
+                        .onChange(of: googleDriveRedirectURI) {
+                            UserDefaults.standard.set(googleDriveRedirectURI, forKey: "GoogleDriveRedirectURI")
+                        }
+                }
+            }
+
+            Section("Status") {
+                HStack {
+                    Image(systemName: GoogleDriveClient.shared.isAuthenticated ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .foregroundColor(GoogleDriveClient.shared.isAuthenticated ? .green : .red)
+                    Text(GoogleDriveClient.shared.isAuthenticated ? "Authenticated" : "Not authenticated")
+                    Spacer()
+                    if GoogleDriveClient.shared.isAuthenticated {
+                        Button("Sign Out") {
+                            GoogleDriveClient.shared.signOut()
+                        }
+                    }
                 }
             }
         }
