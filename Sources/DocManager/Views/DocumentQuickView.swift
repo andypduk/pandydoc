@@ -412,16 +412,24 @@ struct PDFKitView: NSViewRepresentable {
     func makeNSView(context: Context) -> PDFView {
         let pdfView = PDFView()
         pdfView.document = document
-        pdfView.autoScales = true
+        pdfView.autoScales = false
         pdfView.displayMode = .singlePage
         pdfView.displayDirection = .vertical
         pdfView.delegate = context.coordinator
+        pdfView.minScaleFactor = 0.1
+        pdfView.maxScaleFactor = 5.0
         return pdfView
     }
 
     func updateNSView(_ pdfView: PDFView, context: Context) {
-        pdfView.scaleFactor = pdfView.scaleFactorForSizeToFit * zoomLevel
-        if let page = document.page(at: currentPage - 1) {
+        guard let page = document.page(at: max(0, currentPage - 1)) else { return }
+        let pageBounds = page.bounds(for: .mediaBox)
+        let viewBounds = pdfView.bounds
+        if viewBounds.width > 0 && pageBounds.width > 0 {
+            let fitWidthScale = viewBounds.width / pageBounds.width
+            pdfView.scaleFactor = fitWidthScale * zoomLevel
+        }
+        if pdfView.currentPage != page {
             pdfView.go(to: page)
         }
     }
