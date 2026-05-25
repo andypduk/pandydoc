@@ -937,11 +937,13 @@ struct FolderRow: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            let isSelected = selection == .folder(node.folder)
+            
             if hasChildren {
                 Button(action: onToggleExpand) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
                         .frame(width: 12)
                 }
                 .buttonStyle(.plain)
@@ -950,17 +952,25 @@ struct FolderRow: View {
             }
 
             Image(systemName: node.folder.protected ? "lock.fill" : "folder.fill")
-                .foregroundColor(node.folder.protected ? .orange : .accentColor)
+                .foregroundColor(isSelected ? .accentColor : (node.folder.protected ? .orange : .accentColor))
                 .frame(width: 18)
 
             Text(node.name)
                 .font(.body)
+                .fontWeight(isSelected ? .medium : .regular)
                 .lineLimit(1)
 
             Spacer()
         }
         .padding(.leading, CGFloat(depth) * 16)
         .padding(.vertical, 2)
+        .padding(.horizontal, 4)
+        .background(
+            selection == .folder(node.folder)
+                ? Color.accentColor.opacity(0.15)
+                : Color.clear
+        )
+        .cornerRadius(DesignTokens.Corner.sm)
         .contentShape(Rectangle())
         .onTapGesture {
             selection = .folder(node.folder)
