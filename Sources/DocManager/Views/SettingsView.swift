@@ -77,7 +77,7 @@ struct SettingsView: View {
                     Label("Google Drive", systemImage: "cloud.fill")
                 }
         }
-        .frame(width: 480, height: 340)
+        .frame(width: 480, height: 420)
         }
         .alert("Erase All Data", isPresented: $showEraseConfirmation) {
             Button("Cancel", role: .cancel) {}
