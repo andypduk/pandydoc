@@ -219,6 +219,11 @@ final class DocumentListViewModel: ObservableObject {
     
     func loadInitialData() {
         try? storage.initializeStorage()
+        currentFolder = nil
+        isShowingAllDocuments = true
+        isShowingTemplates = false
+        isShowingInbox = false
+        isShowingFlagged = false
         refreshDocuments()
         if navigationHistory.isEmpty {
             recordNavigation(.allDocuments)
