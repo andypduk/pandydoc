@@ -1,6 +1,7 @@
 import Foundation
 import Security
 import AuthenticationServices
+import CryptoKit
 
 @MainActor
 final class GoogleDriveTokenManager: ObservableObject {
@@ -38,17 +39,33 @@ final class GoogleDriveTokenManager: ObservableObject {
         }
     }
 
+    private var pendingState: String?
+    private var pendingCodeVerifier: String?
+
     init() {
         checkAuthStatus()
     }
 
     func authenticate(clientID: String, redirectURI: String) async throws {
-        let authURL = buildAuthURL(clientID: clientID, redirectURI: redirectURI)
+        let codeVerifier = generateCodeVerifier()
+        let codeChallenge = generateCodeChallenge(from: codeVerifier)
+        let state = generateState()
+
+        pendingState = state
+        pendingCodeVerifier = codeVerifier
+
+        let authURL = buildAuthURL(clientID: clientID, redirectURI: redirectURI, codeChallenge: codeChallenge, state: state)
         let callbackURL = try await presentAuthSession(url: authURL, redirectURI: redirectURI)
+
+        guard let returnedState = extractState(from: callbackURL), returnedState == state else {
+            throw GoogleDriveError.authFailed("State mismatch — possible CSRF attack")
+        }
+
         guard let code = extractAuthCode(from: callbackURL) else {
             throw GoogleDriveError.authFailed("No authorization code received")
         }
-        try await exchangeCodeForTokens(code: code, clientID: clientID, redirectURI: redirectURI)
+
+        try await exchangeCodeForTokens(code: code, clientID: clientID, redirectURI: redirectURI, codeVerifier: codeVerifier)
     }
 
     func getValidAccessToken(clientID: String, clientSecret: String) async throws -> String {
@@ -76,7 +93,7 @@ final class GoogleDriveTokenManager: ObservableObject {
         isAuthenticated = accessToken != nil && tokenExpiry.map { $0 > Date() } ?? false
     }
 
-    private func buildAuthURL(clientID: String, redirectURI: String) -> URL {
+    private func buildAuthURL(clientID: String, redirectURI: String, codeChallenge: String, state: String) -> URL {
         var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         components.queryItems = [
             URLQueryItem(name: "client_id", value: clientID),
@@ -84,7 +101,10 @@ final class GoogleDriveTokenManager: ObservableObject {
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "scope", value: "https://www.googleapis.com/auth/drive.readonly"),
             URLQueryItem(name: "access_type", value: "offline"),
-            URLQueryItem(name: "prompt", value: "consent select_account")
+            URLQueryItem(name: "prompt", value: "consent select_account"),
+            URLQueryItem(name: "code_challenge", value: codeChallenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
+            URLQueryItem(name: "state", value: state)
         ]
         return components.url!
     }
@@ -117,7 +137,15 @@ final class GoogleDriveTokenManager: ObservableObject {
         return code
     }
 
-    private func exchangeCodeForTokens(code: String, clientID: String, redirectURI: String) async throws {
+    private func extractState(from url: URL) -> String? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              let state = components.queryItems?.first(where: { $0.name == "state" })?.value else {
+            return nil
+        }
+        return state
+    }
+
+    private func exchangeCodeForTokens(code: String, clientID: String, redirectURI: String, codeVerifier: String) async throws {
         var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -125,13 +153,15 @@ final class GoogleDriveTokenManager: ObservableObject {
             "code": code,
             "client_id": clientID,
             "redirect_uri": redirectURI,
-            "grant_type": "authorization_code"
+            "grant_type": "authorization_code",
+            "code_verifier": codeVerifier
         ]
         request.httpBody = body.map { "\($0.key)=\($0.value)" }.joined(separator: "&").data(using: .utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw GoogleDriveError.authFailed("Token exchange failed")
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw GoogleDriveError.authFailed("Token exchange failed: \(message)")
         }
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         if let accessToken = json?["access_token"] as? String,
@@ -171,6 +201,34 @@ final class GoogleDriveTokenManager: ObservableObject {
         } else {
             throw GoogleDriveError.tokenRefreshFailed
         }
+    }
+
+    private func generateCodeVerifier() -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private func generateCodeChallenge(from verifier: String) -> String {
+        let sha256 = SHA256.hash(data: Data(verifier.utf8))
+        return Data(sha256).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private func generateState() -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
 
     private func readKeychain(account: String) -> String? {
