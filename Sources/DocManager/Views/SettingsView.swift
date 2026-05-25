@@ -20,12 +20,6 @@ struct SettingsView: View {
         let stored = UserDefaults.standard.integer(forKey: "apiPort")
         return stored == 0 ? 8080 : stored
     }()
-    @State private var googleDriveClientID: String = UserDefaults.standard.string(forKey: "GoogleDriveClientID") ?? ""
-    @State private var googleDriveClientSecret: String = UserDefaults.standard.string(forKey: "GoogleDriveClientSecret") ?? ""
-    @State private var googleDriveRedirectURI: String = UserDefaults.standard.string(forKey: "GoogleDriveRedirectURI") ?? "http://localhost"
-    @State private var showGoogleDriveSecret = false
-    @State private var googleDriveTestResult: String?
-    @State private var isGoogleDriveTesting = false
 
     private let dbManager = DatabaseManager.shared
     private let fileManager = FileManager.default
@@ -298,117 +292,32 @@ struct SettingsView: View {
 
     private var googleDriveSettings: some View {
         Form {
-            Section("OAuth2 Credentials") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("To import from Google Drive, you need to create OAuth2 credentials in the Google Cloud Console.")
-                        .font(.caption)
+            Section("Importing from Google Drive") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("To import documents from Google Drive, use the Google Drive for Desktop app.")
+                        .font(.body)
                         .foregroundColor(.secondary)
-                    Text("Setup steps:")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    Text("1. Create OAuth2 credentials (Desktop app type)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("2. Configure OAuth consent screen — add your account as a test user")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("3. Use redirect URI: http://localhost")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Link("Google Cloud Console", destination: URL(string: "https://console.cloud.google.com/apis/credentials")!)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("1. Install Google Drive for Desktop from google.com/drive/download")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("2. Sign in and let it sync your Drive to your Mac")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("3. In PandyDoc, use Import → select files or folders from your synced Google Drive folder")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Link("Download Google Drive for Desktop", destination: URL(string: "https://www.google.com/drive/download/")!)
                         .font(.caption)
                 }
                 .padding(.vertical, 4)
-
-                LabeledContent("Client ID") {
-                    TextField("Enter Client ID", text: $googleDriveClientID)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 250)
-                }
-
-                LabeledContent("Client Secret") {
-                    if showGoogleDriveSecret {
-                        TextField("Enter Client Secret", text: $googleDriveClientSecret)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 250)
-                    } else {
-                        HStack {
-                            Text(googleDriveClientSecret.isEmpty ? "Not set" : String(repeating: "•", count: 20))
-                                .foregroundColor(googleDriveClientSecret.isEmpty ? .secondary : .primary)
-                            Button(showGoogleDriveSecret ? "Hide" : "Show") { showGoogleDriveSecret.toggle() }
-                        }
-                    }
-                }
-
-                LabeledContent("Redirect URI") {
-                    TextField("Enter Redirect URI", text: $googleDriveRedirectURI)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 250)
-                }
-
-                HStack(spacing: 8) {
-                    Button("Save") {
-                        UserDefaults.standard.set(googleDriveClientID, forKey: "GoogleDriveClientID")
-                        UserDefaults.standard.set(googleDriveClientSecret, forKey: "GoogleDriveClientSecret")
-                        UserDefaults.standard.set(googleDriveRedirectURI, forKey: "GoogleDriveRedirectURI")
-                        googleDriveTestResult = "Credentials saved"
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button("Test") {
-                        Task { await testGoogleDriveCredentials() }
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(isGoogleDriveTesting || googleDriveClientID.isEmpty || googleDriveClientSecret.isEmpty)
-
-                    if isGoogleDriveTesting {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                    }
-                }
-
-                if let result = googleDriveTestResult {
-                    Text(result)
-                        .font(.caption)
-                        .foregroundColor(googleDriveTestResult?.hasPrefix("✓") == true ? .green : .red)
-                }
-            }
-
-            Section("Status") {
-                HStack {
-                    Image(systemName: GoogleDriveClient.shared.isAuthenticated ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundColor(GoogleDriveClient.shared.isAuthenticated ? .green : .red)
-                    Text(GoogleDriveClient.shared.isAuthenticated ? "Authenticated" : "Not authenticated")
-                    Spacer()
-                    if GoogleDriveClient.shared.isAuthenticated {
-                        Button("Sign Out") {
-                            GoogleDriveClient.shared.signOut()
-                        }
-                    }
-                }
             }
         }
         .formStyle(.grouped)
         .padding()
-    }
-
-    private func testGoogleDriveCredentials() async {
-        UserDefaults.standard.set(googleDriveClientID, forKey: "GoogleDriveClientID")
-        UserDefaults.standard.set(googleDriveClientSecret, forKey: "GoogleDriveClientSecret")
-        UserDefaults.standard.set(googleDriveRedirectURI, forKey: "GoogleDriveRedirectURI")
-
-        isGoogleDriveTesting = true
-        googleDriveTestResult = nil
-
-        do {
-            try await GoogleDriveClient.shared.authenticate()
-            _ = try await GoogleDriveClient.shared.listFiles()
-            googleDriveTestResult = "✓ Connection successful — credentials are valid"
-        } catch {
-            googleDriveTestResult = "✗ Test failed: \(error.localizedDescription)"
-        }
-
-        isGoogleDriveTesting = false
     }
 
     private func compressDatabase() {
