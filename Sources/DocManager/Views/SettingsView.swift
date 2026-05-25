@@ -24,6 +24,8 @@ struct SettingsView: View {
     @State private var googleDriveClientSecret: String = UserDefaults.standard.string(forKey: "GoogleDriveClientSecret") ?? ""
     @State private var googleDriveRedirectURI: String = UserDefaults.standard.string(forKey: "GoogleDriveRedirectURI") ?? "com.pandydoc://googledrive"
     @State private var showGoogleDriveSecret = false
+    @State private var googleDriveTestResult: String?
+    @State private var isGoogleDriveTesting = false
 
     private let dbManager = DatabaseManager.shared
     private let fileManager = FileManager.default
@@ -310,9 +312,6 @@ struct SettingsView: View {
                     TextField("Enter Client ID", text: $googleDriveClientID)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 250)
-                        .onChange(of: googleDriveClientID) {
-                            UserDefaults.standard.set(googleDriveClientID, forKey: "GoogleDriveClientID")
-                        }
                 }
 
                 LabeledContent("Client Secret") {
@@ -320,9 +319,6 @@ struct SettingsView: View {
                         TextField("Enter Client Secret", text: $googleDriveClientSecret)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 250)
-                            .onChange(of: googleDriveClientSecret) {
-                                UserDefaults.standard.set(googleDriveClientSecret, forKey: "GoogleDriveClientSecret")
-                            }
                     } else {
                         HStack {
                             Text(googleDriveClientSecret.isEmpty ? "Not set" : String(repeating: "•", count: 20))
@@ -336,9 +332,33 @@ struct SettingsView: View {
                     TextField("Enter Redirect URI", text: $googleDriveRedirectURI)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 250)
-                        .onChange(of: googleDriveRedirectURI) {
-                            UserDefaults.standard.set(googleDriveRedirectURI, forKey: "GoogleDriveRedirectURI")
-                        }
+                }
+
+                HStack(spacing: 8) {
+                    Button("Save") {
+                        UserDefaults.standard.set(googleDriveClientID, forKey: "GoogleDriveClientID")
+                        UserDefaults.standard.set(googleDriveClientSecret, forKey: "GoogleDriveClientSecret")
+                        UserDefaults.standard.set(googleDriveRedirectURI, forKey: "GoogleDriveRedirectURI")
+                        googleDriveTestResult = "Credentials saved"
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button("Test") {
+                        Task { await testGoogleDriveCredentials() }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isGoogleDriveTesting || googleDriveClientID.isEmpty || googleDriveClientSecret.isEmpty)
+
+                    if isGoogleDriveTesting {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    }
+                }
+
+                if let result = googleDriveTestResult {
+                    Text(result)
+                        .font(.caption)
+                        .foregroundColor(googleDriveTestResult?.hasPrefix("✓") == true ? .green : .red)
                 }
             }
 
@@ -358,6 +378,25 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private func testGoogleDriveCredentials() async {
+        UserDefaults.standard.set(googleDriveClientID, forKey: "GoogleDriveClientID")
+        UserDefaults.standard.set(googleDriveClientSecret, forKey: "GoogleDriveClientSecret")
+        UserDefaults.standard.set(googleDriveRedirectURI, forKey: "GoogleDriveRedirectURI")
+
+        isGoogleDriveTesting = true
+        googleDriveTestResult = nil
+
+        do {
+            try await GoogleDriveClient.shared.authenticate()
+            _ = try await GoogleDriveClient.shared.listFiles()
+            googleDriveTestResult = "✓ Connection successful — credentials are valid"
+        } catch {
+            googleDriveTestResult = "✗ Test failed: \(error.localizedDescription)"
+        }
+
+        isGoogleDriveTesting = false
     }
 
     private func compressDatabase() {
