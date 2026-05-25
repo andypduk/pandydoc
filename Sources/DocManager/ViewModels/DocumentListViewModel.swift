@@ -932,23 +932,43 @@ final class DocumentListViewModel: ObservableObject {
 
         Task {
             do {
-                let docs = try storage.getDocumentsInFolder(folderID: folder.id)
-                guard !docs.isEmpty else {
-                    archiveProgress = nil
-                    errorMessage = "Folder is empty, nothing to archive."
-                    return
-                }
-
                 let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("PandyDoc/Archive/\(folder.id.uuidString)", isDirectory: true)
                 try? FileManager.default.removeItem(at: tempDir)
                 try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-                for doc in docs {
-                    let src = URL(fileURLWithPath: doc.filePath)
-                    let dest = tempDir.appendingPathComponent(doc.fileName)
-                    if FileManager.default.fileExists(atPath: src.path) {
-                        try FileManager.default.copyItem(at: src, to: dest)
+                let allFolders = storage.getAllFolders()
+                let descendantFolders = allFolders.filter { isDescendantFolder($0, of: folder.id, allFolders: allFolders) }
+                let foldersToProcess = [folder] + descendantFolders
+
+                var folderPathMap: [UUID: String] = [:]
+                folderPathMap[folder.id] = ""
+
+                for subFolder in descendantFolders {
+                    let path = buildFolderPath(subFolder, rootID: folder.id, allFolders: allFolders)
+                    folderPathMap[subFolder.id] = path
+                }
+
+                var docCount = 0
+                for targetFolder in foldersToProcess {
+                    let relativePath = folderPathMap[targetFolder.id] ?? ""
+                    let destDir = relativePath.isEmpty ? tempDir : tempDir.appendingPathComponent(relativePath, isDirectory: true)
+                    try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+
+                    let docs = try storage.getDocumentsInFolder(folderID: targetFolder.id)
+                    for doc in docs {
+                        let src = URL(fileURLWithPath: doc.filePath)
+                        let dest = destDir.appendingPathComponent(doc.fileName)
+                        if FileManager.default.fileExists(atPath: src.path) {
+                            try FileManager.default.copyItem(at: src, to: dest)
+                            docCount += 1
+                        }
                     }
+                }
+
+                guard docCount > 0 else {
+                    archiveProgress = nil
+                    errorMessage = "Folder is empty, nothing to archive."
+                    return
                 }
 
                 let zipURL = destinationURL.appendingPathComponent("\(folder.name).zip")
@@ -963,6 +983,26 @@ final class DocumentListViewModel: ObservableObject {
                 errorMessage = "Archive failed: \(error.localizedDescription)"
             }
         }
+    }
+
+    private func isDescendantFolder(_ folder: Folder, of parentID: UUID, allFolders: [Folder]) -> Bool {
+        guard let folderParentID = folder.parentID else { return false }
+        if folderParentID == parentID { return true }
+        let parentFolder = allFolders.first(where: { $0.id == folderParentID })
+        if let parent = parentFolder {
+            return isDescendantFolder(parent, of: parentID, allFolders: allFolders)
+        }
+        return false
+    }
+
+    private func buildFolderPath(_ folder: Folder, rootID: UUID, allFolders: [Folder]) -> String {
+        var components: [String] = []
+        var current: Folder? = folder
+        while let f = current, f.id != rootID {
+            components.insert(f.name, at: 0)
+            current = allFolders.first(where: { $0.id == f.parentID })
+        }
+        return components.joined(separator: "/")
     }
 
     private func createZipArchive(from sourceDir: URL, to zipURL: URL) throws {
