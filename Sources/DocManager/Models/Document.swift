@@ -16,7 +16,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
     var tags: [String]
     var notes: String
     var parentID: UUID?
-    var filePath: String
+    var filePath: String?
     var thumbnailPath: String?
     var protected: Bool
     var flagged: Bool
@@ -45,7 +45,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         tags = try container.decode([String].self, forKey: .tags)
         notes = try container.decode(String.self, forKey: .notes)
         parentID = try container.decodeIfPresent(UUID.self, forKey: .parentID)
-        filePath = try container.decode(String.self, forKey: .filePath)
+        filePath = try container.decodeIfPresent(String.self, forKey: .filePath)
         thumbnailPath = try container.decodeIfPresent(String.self, forKey: .thumbnailPath)
         protected = try container.decodeIfPresent(Bool.self, forKey: .protected) ?? false
         flagged = try container.decodeIfPresent(Bool.self, forKey: .flagged) ?? false
@@ -68,7 +68,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         try container.encode(tags, forKey: .tags)
         try container.encode(notes, forKey: .notes)
         try container.encodeIfPresent(parentID, forKey: .parentID)
-        try container.encode(filePath, forKey: .filePath)
+        try container.encodeIfPresent(filePath, forKey: .filePath)
         try container.encodeIfPresent(thumbnailPath, forKey: .thumbnailPath)
         try container.encode(protected, forKey: .protected)
         try container.encode(flagged, forKey: .flagged)
@@ -90,7 +90,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
         tags: [String],
         notes: String,
         parentID: UUID?,
-        filePath: String,
+        filePath: String?,
         thumbnailPath: String?,
         protected: Bool,
         flagged: Bool = false
@@ -131,7 +131,6 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
     static func createNew(
         name: String,
         fileName: String,
-        filePath: String,
         fileSize: Int64,
         parentID: UUID? = nil
     ) -> Document {
@@ -152,7 +151,7 @@ struct Document: Codable, Identifiable, Equatable, Hashable {
             tags: [],
             notes: "",
             parentID: parentID,
-            filePath: filePath,
+            filePath: nil,
             thumbnailPath: nil,
             protected: false
         )
@@ -164,7 +163,7 @@ struct DocumentVersion: Codable, Identifiable {
     let documentId: UUID
     let versionNumber: Int
     let fileName: String
-    let filePath: String
+    let filePath: String?
     let fileSize: Int64
     let createdBy: String
     let createdAt: Date

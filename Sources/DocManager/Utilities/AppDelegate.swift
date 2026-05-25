@@ -134,7 +134,6 @@ extension DocumentStorage {
         let document = Document.createNew(
             name: docName,
             fileName: fileName,
-            filePath: destURL.path,
             fileSize: fileSize
         )
         
@@ -207,13 +206,13 @@ extension DocumentStorage {
         let attributes = try FileManager.default.attributesOfItem(atPath: destURL.path)
         let fileSize = attributes[.size] as? Int64 ?? 0
 
-        let document = Document.createNew(
+        var document = Document.createNew(
             name: docName,
             fileName: fileName,
-            filePath: destURL.path,
             fileSize: fileSize,
             parentID: folderID
         )
+        document.filePath = destURL.path
 
         try saveDocument(document)
         _ = try createVersion(

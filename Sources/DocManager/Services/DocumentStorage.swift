@@ -11,6 +11,10 @@ protocol DocumentStorageProtocol {
     func getAllTags() -> [(tag: String, count: Int)]
     func deleteDocument(id: UUID) throws
     func updateDocument(_ document: Document) throws
+    func updateDocumentCheckIn(id: UUID) throws
+    func decompressDocument(id: UUID) throws -> URL
+    func updateDocumentFile(documentId: UUID, sourcePath: String) throws
+    func decompressVersion(documentId: UUID, versionNumber: Int) throws -> URL
     
     func createVersion(documentId: UUID, sourcePath: String, changeNotes: String?) throws -> DocumentVersion
     func getVersions(documentId: UUID) -> [DocumentVersion]
@@ -30,46 +34,65 @@ protocol DocumentStorageProtocol {
     func isFolderProtected(id: UUID) throws -> Bool
     func toggleDocumentProtection(id: UUID) throws
     func getAllDocumentsRecursive() -> [Document]
+    func getAllDocumentsRecursiveMetadata() -> [Document]
     func getCheckedOutByUser(username: String) -> [Document]
     func getDocumentsInFolder(folderID: UUID) throws -> [Document]
+    func getDocumentsInFolderMetadata(folderID: UUID) throws -> [Document]
     func moveDocument(documentID: UUID, to folderID: UUID?) throws
     func isSystemFolder(id: UUID) -> Bool
 }
 
 final class DocumentStorage: DocumentStorageProtocol {
-    static let shared = DocumentStorage()
+    static let shared = DocumentStorage(DatabaseManager.shared)
     
     private let fileManager = FileManager.default
     private var db: DatabaseManager
-    private var documentsURL: URL
-    private var versionsURL: URL
-    
-    private init(db: DatabaseManager = DatabaseManager.shared) {
+    private var tempURL: URL
+
+    private init(_ db: DatabaseManager) {
         self.db = db
-        
-        documentsURL = db.storageURL.appendingPathComponent("Documents", isDirectory: true)
-        versionsURL = db.storageURL.appendingPathComponent("Versions", isDirectory: true)
-        
-        print("PandyDoc storage: \(db.storageURL.path)")
+        tempURL = db.storageURL.appendingPathComponent("Temp", isDirectory: true)
     }
     
     func initializeStorage() throws {
         try db.connect()
-        try createDirectoryIfNeeded(documentsURL)
-        try createDirectoryIfNeeded(versionsURL)
+        try db.ensureMigrations()
+        try createDirectoryIfNeeded(tempURL)
     }
     
     func saveDocument(_ document: Document) throws {
+        print("saveDocument: Starting for document \(document.id)")
         let conn = try db.getConnection()
+        print("saveDocument: Got database connection")
         
-        let destURL = documentsURL.appendingPathComponent("\(document.id.uuidString).\(document.fileExtension)")
-        if !fileManager.fileExists(atPath: destURL.path) {
-            try fileManager.copyItem(atPath: document.filePath, toPath: destURL.path)
+        guard let sourcePath = document.filePath else {
+            print("saveDocument: filePath is nil, returning early")
+            return
         }
+        print("saveDocument: Source path is \(sourcePath)")
+        
+        print("saveDocument: Starting compression")
+        let (compressedData, originalSize) = try DataCompression.compressFile(at: URL(fileURLWithPath: sourcePath))
+        print("saveDocument: Compressed from \(originalSize) to \(compressedData.count) bytes")
         
         var doc = document
-        doc.filePath = destURL.path
-        try db.insertDocument(db: conn, document: doc)
+        doc.filePath = nil
+        doc.fileSize = originalSize
+        print("saveDocument: Calling insertDocument")
+        try db.insertDocument(db: conn, document: doc, fileData: compressedData)
+        print("saveDocument: Document inserted successfully")
+    }
+    
+    func decompressDocument(id: UUID) throws -> URL {
+        let conn = try db.getConnection()
+        guard let result = try db.getDocumentWithFileData(db: conn, id: id) else {
+            throw DocumentError.documentNotFound
+        }
+        let (doc, fileData) = result
+        
+        let destURL = tempURL.appendingPathComponent("\(doc.id.uuidString)_\(doc.fileName)")
+        try DataCompression.decompressToFile(data: fileData, originalSize: doc.fileSize, to: destURL)
+        return destURL
     }
     
     func getDocument(id: UUID) -> Document? {
@@ -96,9 +119,11 @@ final class DocumentStorage: DocumentStorageProtocol {
         let conn = try db.getConnection()
         
         if let doc = getDocument(id: id) {
-            try? fileManager.removeItem(atPath: doc.filePath)
-            let docVersionsURL = versionsURL.appendingPathComponent(doc.id.uuidString, isDirectory: true)
-            try? fileManager.removeItem(atPath: docVersionsURL.path)
+            if let filePath = doc.filePath {
+                try? fileManager.removeItem(atPath: filePath)
+            }
+            let tempDocURL = tempURL.appendingPathComponent("\(doc.id.uuidString)_\(doc.fileName)")
+            try? fileManager.removeItem(atPath: tempDocURL.path)
         }
         
         try db.deleteDocument(db: conn, id: id)
@@ -108,6 +133,17 @@ final class DocumentStorage: DocumentStorageProtocol {
         let conn = try db.getConnection()
         try db.updateDocument(db: conn, document: document)
     }
+
+    func updateDocumentCheckIn(id: UUID) throws {
+        let conn = try db.getConnection()
+        try db.updateDocumentCheckIn(db: conn, id: id)
+    }
+
+    func updateDocumentFile(documentId: UUID, sourcePath: String) throws {
+        let conn = try db.getConnection()
+        let (compressedData, originalSize) = try DataCompression.compressFile(at: URL(fileURLWithPath: sourcePath))
+        try db.updateDocumentFileData(db: conn, id: documentId, fileData: compressedData, fileSize: originalSize)
+    }
     
     func createVersion(documentId: UUID, sourcePath: String, changeNotes: String?) throws -> DocumentVersion {
         let conn = try db.getConnection()
@@ -116,19 +152,13 @@ final class DocumentStorage: DocumentStorageProtocol {
             throw DocumentError.documentNotFound
         }
         
-        let versionDir = versionsURL.appendingPathComponent(documentId.uuidString, isDirectory: true)
-        try createDirectoryIfNeeded(versionDir)
-        
-        let versionNumber = doc.currentVersion + 1
+        let existingVersions = try db.getVersions(db: conn, documentId: documentId)
+        let maxVersionNumber = existingVersions.map { $0.versionNumber }.max() ?? doc.currentVersion
+        let versionNumber = maxVersionNumber + 1
         let versionFileName = "v\(versionNumber)_\(doc.fileName)"
-        let versionURL = versionDir.appendingPathComponent(versionFileName)
         
-        if fileManager.fileExists(atPath: versionURL.path) {
-            try fileManager.removeItem(atPath: versionURL.path)
-        }
-        try fileManager.copyItem(atPath: sourcePath, toPath: versionURL.path)
-        let attributes = try fileManager.attributesOfItem(atPath: versionURL.path)
-        let fileSize = attributes[.size] as? Int64 ?? 0
+        print("createVersion: Compressing version file at \(sourcePath)")
+        let (compressedData, originalSize) = try DataCompression.compressFile(at: URL(fileURLWithPath: sourcePath))
         let checksum = try generateChecksum(sourcePath)
         
         let version = DocumentVersion(
@@ -136,22 +166,24 @@ final class DocumentStorage: DocumentStorageProtocol {
             documentId: documentId,
             versionNumber: versionNumber,
             fileName: versionFileName,
-            filePath: versionURL.path,
-            fileSize: fileSize,
+            filePath: nil,
+            fileSize: originalSize,
             createdBy: NSFullUserName(),
             createdAt: Date(),
             checksum: checksum,
             changeNotes: changeNotes
         )
         
+        print("createVersion: Inserting version into database")
         try conn.transaction {
-            try db.insertVersion(db: conn, version: version)
+            try db.insertVersion(db: conn, version: version, fileData: compressedData)
             
             var updatedDoc = doc
             updatedDoc.currentVersion = versionNumber
             updatedDoc.updatedAt = Date()
             try db.updateDocument(db: conn, document: updatedDoc)
         }
+        print("createVersion: Version inserted successfully")
         
         NotificationCenter.default.post(
             name: .documentVersionCreated,
@@ -162,6 +194,18 @@ final class DocumentStorage: DocumentStorageProtocol {
         return version
     }
     
+    func decompressVersion(documentId: UUID, versionNumber: Int) throws -> URL {
+        let conn = try db.getConnection()
+        guard let result = try db.getVersionWithFileData(db: conn, documentId: documentId, versionNum: versionNumber) else {
+            throw DocumentError.versionNotFound
+        }
+        let (version, fileData) = result
+        
+        let destURL = tempURL.appendingPathComponent("\(documentId.uuidString)_v\(versionNumber)_\(version.fileName)")
+        try DataCompression.decompressToFile(data: fileData, originalSize: version.fileSize, to: destURL)
+        return destURL
+    }
+
     func getVersions(documentId: UUID) -> [DocumentVersion] {
         guard let conn = try? db.getConnection() else { return [] }
         return (try? db.getVersions(db: conn, documentId: documentId)) ?? []
@@ -175,19 +219,17 @@ final class DocumentStorage: DocumentStorageProtocol {
     func restoreVersion(documentId: UUID, versionNumber: Int) throws -> String {
         let conn = try db.getConnection()
         
-        guard let version = try db.getVersion(db: conn, documentId: documentId, versionNum: versionNumber) else {
-            throw DocumentError.versionNotFound
-        }
-
         guard let doc = try db.getDocument(db: conn, id: documentId) else {
             throw DocumentError.documentNotFound
         }
 
-        let destURL = URL(fileURLWithPath: doc.filePath)
-        if fileManager.fileExists(atPath: destURL.path) {
-            try fileManager.removeItem(at: destURL)
+        guard let result = try db.getVersionWithFileData(db: conn, documentId: documentId, versionNum: versionNumber) else {
+            throw DocumentError.versionNotFound
         }
-        try fileManager.copyItem(atPath: version.filePath, toPath: destURL.path)
+        let (version, versionData) = result
+
+        let destURL = tempURL.appendingPathComponent("\(doc.id.uuidString)_\(doc.fileName)")
+        try DataCompression.decompressToFile(data: versionData, originalSize: version.fileSize, to: destURL)
 
         let attributes = try fileManager.attributesOfItem(atPath: destURL.path)
 
@@ -211,26 +253,23 @@ final class DocumentStorage: DocumentStorageProtocol {
         var doc = Document.createNew(
             name: docName,
             fileName: sanitizedFileName,
-            filePath: sourcePath,
             fileSize: 0,
             parentID: parentID
         )
         doc.tags.append(contentsOf: normalizedTags)
         
-        let destURL = documentsURL.appendingPathComponent("\(doc.id.uuidString).pdf")
-        try fileManager.copyItem(atPath: sourcePath, toPath: destURL.path)
+        let (compressedData, originalSize) = try DataCompression.compressFile(at: URL(fileURLWithPath: sourcePath))
         
-        let attributes = try fileManager.attributesOfItem(atPath: destURL.path)
         var savedDoc = doc
-        savedDoc.filePath = destURL.path
-        savedDoc.fileSize = attributes[.size] as? Int64 ?? 0
+        savedDoc.filePath = nil
+        savedDoc.fileSize = originalSize
         savedDoc.documentType = .pdf
         
-        try db.insertDocument(db: conn, document: savedDoc)
+        try db.insertDocument(db: conn, document: savedDoc, fileData: compressedData)
         
         _ = try createVersion(
             documentId: savedDoc.id,
-            sourcePath: destURL.path,
+            sourcePath: sourcePath,
             changeNotes: "Received via Print to PandyDoc"
         )
         
@@ -330,9 +369,19 @@ final class DocumentStorage: DocumentStorageProtocol {
         return try db.getDocumentsInFolder(db: conn, folderID: folderID)
     }
 
+    func getDocumentsInFolderMetadata(folderID: UUID) throws -> [Document] {
+        let conn = try db.getConnection()
+        return try db.getDocumentsInFolderMetadata(db: conn, folderID: folderID)
+    }
+
     func getAllDocumentsRecursive() -> [Document] {
         guard let conn = try? db.getConnection() else { return [] }
         return (try? db.getAllDocumentsRecursive(db: conn)) ?? []
+    }
+
+    func getAllDocumentsRecursiveMetadata() -> [Document] {
+        guard let conn = try? db.getConnection() else { return [] }
+        return (try? db.getAllDocumentsRecursiveMetadata(db: conn)) ?? []
     }
 
     func getCheckedOutByUser(username: String) -> [Document] {

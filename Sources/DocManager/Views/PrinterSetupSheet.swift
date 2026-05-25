@@ -3,6 +3,7 @@ import SwiftUI
 struct PrinterSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isInstallingService = false
+    @State private var isUninstallingService = false
     @State private var serviceInstalled = false
     @State private var statusMessage: String?
     @State private var showStatus = false
@@ -22,7 +23,7 @@ struct PrinterSetupSheet: View {
                                 .font(.headline)
                         }
 
-                        Text("Adds 'Save to PandyDoc' to the PDF menu in any print dialog. No admin privileges required.")
+                        Text("Adds 'Save PDF to PandyDoc' to the PDF menu in any print dialog. No admin privileges required.")
                             .font(.caption)
                             .foregroundColor(.secondary)
 
@@ -33,15 +34,28 @@ struct PrinterSetupSheet: View {
                                 .font(.caption)
                                 .foregroundColor(serviceInstalled ? .green : .secondary)
                             Spacer()
-                            Button(action: installPDFService) {
-                                if isInstallingService {
-                                    ProgressView().scaleEffect(0.8)
-                                } else {
-                                    Label(serviceInstalled ? "Reinstall" : "Install", systemImage: "arrow.down.circle")
+                            if serviceInstalled {
+                                Button(action: uninstallPDFService) {
+                                    if isUninstallingService {
+                                        ProgressView().scaleEffect(0.8)
+                                    } else {
+                                        Label("Remove", systemImage: "trash")
+                                    }
                                 }
+                                .buttonStyle(.bordered)
+                                .tint(.red)
+                                .disabled(isUninstallingService)
+                            } else {
+                                Button(action: installPDFService) {
+                                    if isInstallingService {
+                                        ProgressView().scaleEffect(0.8)
+                                    } else {
+                                        Label("Install", systemImage: "arrow.down.circle")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .disabled(isInstallingService)
                             }
-                            .buttonStyle(.bordered)
-                            .disabled(isInstallingService)
                         }
                     }
                 }
@@ -50,7 +64,7 @@ struct PrinterSetupSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HowItWorksStep(number: 1, text: "Open any application and press Cmd+P to print")
                         HowItWorksStep(number: 2, text: "Click the PDF dropdown in the print dialog")
-                        HowItWorksStep(number: 3, text: "Select 'Save to PandyDoc' from the menu")
+                        HowItWorksStep(number: 3, text: "Select 'Save PDF to PandyDoc' from the menu")
                         HowItWorksStep(number: 4, text: "The PDF is saved directly to your PandyDoc library")
                     }
                 }
@@ -81,7 +95,16 @@ struct PrinterSetupSheet: View {
         let success = printerService.installPDFService()
         isInstallingService = false
         serviceInstalled = success
-        statusMessage = success ? "PDF Service installed successfully. 'Save to PandyDoc' is now available in print dialogs." : "Failed to install PDF Service"
+        statusMessage = success ? "PDF Service installed successfully. 'Save PDF to PandyDoc' is now available in print dialogs." : "Failed to install PDF Service"
+        showStatus = true
+    }
+
+    private func uninstallPDFService() {
+        isUninstallingService = true
+        let success = printerService.uninstallPDFService()
+        isUninstallingService = false
+        serviceInstalled = !success
+        statusMessage = success ? "PDF Service removed. 'Save PDF to PandyDoc' is no longer available in print dialogs." : "Failed to remove PDF Service"
         showStatus = true
     }
 }

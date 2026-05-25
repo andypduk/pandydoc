@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import WebKit
 import QuickLookThumbnailing
 import PDFKit
 
@@ -47,6 +48,21 @@ final class PDFPreviewGenerator {
         } else if ext == "pptx" || ext == "ppt" {
             print("PDFPreviewGenerator: Converting PowerPoint document")
             return await convertViaQuickLook(from: sourceURL, to: outputURL)
+        } else if ext == "xlsx" || ext == "xls" {
+            print("PDFPreviewGenerator: Converting Excel spreadsheet")
+            return await convertViaQuickLook(from: sourceURL, to: outputURL)
+        } else if ext == "rtf" {
+            print("PDFPreviewGenerator: Converting RTF document")
+            return await printRTFToPDF(from: sourceURL, to: outputURL)
+        } else if ext == "txt" || ext == "csv" || ext == "log" {
+            print("PDFPreviewGenerator: Converting text file")
+            return await convertTextToPDF(from: sourceURL, to: outputURL)
+        } else if ext == "pages" || ext == "numbers" || ext == "key" {
+            print("PDFPreviewGenerator: Converting iWork document")
+            return await convertViaQuickLook(from: sourceURL, to: outputURL)
+        } else if ext == "html" || ext == "htm" {
+            print("PDFPreviewGenerator: Converting HTML file")
+            return await convertHTMLToPDF(from: sourceURL, to: outputURL)
         }
         
         print("PDFPreviewGenerator: Unsupported extension")
@@ -187,8 +203,84 @@ final class PDFPreviewGenerator {
         }
     }
     
+    private func convertTextToPDF(from sourceURL: URL, to outputURL: URL) async -> Bool {
+        print("PDFPreviewGenerator: Converting text file to PDF")
+        
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.main.async {
+                guard let textData = try? Data(contentsOf: sourceURL),
+                      let text = String(data: textData, encoding: .utf8) else {
+                    print("PDFPreviewGenerator: Failed to load text file")
+                    continuation.resume(returning: false)
+                    return
+                }
+                
+                let attrString = NSAttributedString(string: text, attributes: [
+                    .font: NSFont.systemFont(ofSize: 12)
+                ])
+                
+                let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 612, height: 792))
+                textView.textStorage?.setAttributedString(attrString)
+                
+                let printInfoDict: [NSPrintInfo.AttributeKey: Any] = [
+                    .jobDisposition: NSPrintInfo.JobDisposition.save,
+                    .jobSavingURL: outputURL
+                ]
+                let printInfo = NSPrintInfo(dictionary: printInfoDict)
+                
+                let printOperation = NSPrintOperation(view: textView, printInfo: printInfo)
+                printOperation.showsPrintPanel = false
+                printOperation.showsProgressPanel = false
+                
+                let success = printOperation.run()
+                print("PDFPreviewGenerator: Text to PDF conversion result = \(success)")
+                
+                continuation.resume(returning: success)
+            }
+        }
+    }
+    
+    private func convertHTMLToPDF(from sourceURL: URL, to outputURL: URL) async -> Bool {
+        print("PDFPreviewGenerator: Converting HTML to PDF via WebView")
+        
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.main.async {
+                guard let htmlData = try? Data(contentsOf: sourceURL),
+                      let html = String(data: htmlData, encoding: .utf8) else {
+                    print("PDFPreviewGenerator: Failed to load HTML file")
+                    continuation.resume(returning: false)
+                    return
+                }
+                
+                let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 1000))
+                webView.loadHTMLString(html, baseURL: sourceURL.deletingLastPathComponent())
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    let printInfo = NSPrintInfo(dictionary: [
+                        .jobDisposition: NSPrintInfo.JobDisposition.save,
+                        .jobSavingURL: outputURL
+                    ])
+                    let printOperation = NSPrintOperation(view: webView, printInfo: printInfo)
+                    printOperation.showsPrintPanel = false
+                    printOperation.showsProgressPanel = false
+                    
+                    let success = printOperation.run()
+                    print("PDFPreviewGenerator: HTML to PDF conversion result = \(success)")
+                    
+                    continuation.resume(returning: success)
+                }
+            }
+        }
+    }
+    
     func shouldGeneratePreview(for filePath: String) -> Bool {
         let ext = (filePath as NSString).pathExtension.lowercased()
-        return ext == "docx" || ext == "pptx" || ext == "doc" || ext == "ppt"
+        let convertibleExtensions: Set<String> = [
+            "docx", "doc", "pptx", "ppt", "xlsx", "xls",
+            "rtf", "txt", "csv", "log",
+            "pages", "numbers", "key",
+            "html", "htm"
+        ]
+        return convertibleExtensions.contains(ext)
     }
 }

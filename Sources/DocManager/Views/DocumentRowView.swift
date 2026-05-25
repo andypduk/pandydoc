@@ -56,7 +56,17 @@ struct DocumentRowView: View {
             let provider = NSItemProvider()
             provider.suggestedName = document.fileName
             provider.registerFileRepresentation(forTypeIdentifier: UTType.fileURL.identifier, fileOptions: [], visibility: .all) { completion in
-                let fileURL = URL(fileURLWithPath: document.filePath)
+                let fileURL: URL
+                if let filePath = self.document.filePath {
+                    fileURL = URL(fileURLWithPath: filePath)
+                } else {
+                    do {
+                        fileURL = try self.viewModel.decompressDocumentIfNeeded(id: self.document.id)
+                    } catch {
+                        completion(nil, false, error)
+                        return nil
+                    }
+                }
                 completion(fileURL, true, nil)
                 return nil
             }

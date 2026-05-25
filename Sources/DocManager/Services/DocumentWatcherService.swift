@@ -23,7 +23,8 @@ final class DocumentWatcherService {
         queue.async {
             self.stopWatching(documentId: document.id)
             
-            let fileURL = URL(fileURLWithPath: document.filePath)
+            guard let filePath = document.filePath else { return }
+            let fileURL = URL(fileURLWithPath: filePath)
             guard self.fileManager.fileExists(atPath: fileURL.path) else { return }
             
             do {

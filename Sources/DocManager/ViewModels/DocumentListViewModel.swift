@@ -61,36 +61,50 @@ final class DocumentListViewModel: ObservableObject {
     @Published var isShowingInbox = false
     var inboxDocumentCount: Int {
         guard let inboxID = inboxFolderID else { return 0 }
-        return (try? storage.getDocumentsInFolder(folderID: inboxID).count) ?? 0
+        return getDocumentsInFolderCached(folderID: inboxID).filter { $0.parentID == inboxID }.count
     }
     @Published var isShowingFlagged = false
     var flaggedDocumentCount: Int {
-        storage.getAllDocumentsRecursive().filter { $0.flagged }.count
+        getAllDocumentsCached().filter { $0.flagged }.count
     }
 
     func navigateToFlagged() {
+        print("navigateToFlagged: Starting")
         folderPath.removeAll()
-        currentFolder = nil
         isShowingTemplates = false
         isShowingInbox = false
         isShowingFlagged = true
-        documents = storage.getAllDocumentsRecursive().filter { $0.flagged }
         isShowingAllDocuments = false
+        currentFolder = nil
         recordNavigation(.flagged)
+        print("navigateToFlagged: Calling refreshDocuments")
+        refreshDocuments()
     }
 
     func toggleFlag(_ document: Document) {
+        print("toggleFlag: Document \(document.name), current flagged=\(document.flagged)")
         do {
             var updated = document
             updated.flagged.toggle()
+            print("toggleFlag: New flagged value=\(updated.flagged)")
             try storage.updateDocument(updated)
-            refreshDocuments()
-            if let fresh = storage.getDocument(id: document.id) {
-                selectedDocument = fresh
+            print("toggleFlag: updateDocument succeeded")
+            
+            if let idx = documents.firstIndex(where: { $0.id == document.id }) {
+                documents[idx] = updated
+            }
+            if let idx = cachedAllDocuments?.firstIndex(where: { $0.id == document.id }) {
+                cachedAllDocuments?[idx] = updated
+            }
+            
+            if selectedDocument?.id == document.id {
+                selectedDocument = updated
                 documentRefreshToken += 1
             }
+            refreshDocuments()
         } catch {
             errorMessage = "Failed to toggle flag: \(error.localizedDescription)"
+            print("toggleFlag: Error: \(error)")
         }
     }
 
@@ -107,9 +121,10 @@ final class DocumentListViewModel: ObservableObject {
     func navigateToInbox() {
         ensureInboxFolderExists()
         folderPath.removeAll()
-        currentFolder = nil
         isShowingTemplates = false
         isShowingInbox = true
+        isShowingFlagged = false
+        currentFolder = nil
         recordNavigation(.inbox)
         refreshDocuments()
     }
@@ -126,7 +141,7 @@ final class DocumentListViewModel: ObservableObject {
     }
 
     var checkedOutCount: Int {
-        storage.getCheckedOutByUser(username: NSFullUserName()).count
+        getAllDocumentsCached().filter { $0.isCheckedOut && $0.checkedOutBy == NSFullUserName() }.count
     }
 
     struct FolderNode: Identifiable, Hashable {
@@ -147,6 +162,19 @@ final class DocumentListViewModel: ObservableObject {
     var folderTree: [FolderNode] {
         let filtered = allFolders.filter { $0.id != templatesFolderID }
         return buildFolderTree(from: filtered)
+    }
+
+    private var cachedFolderTree: [FolderNode]?
+    private var cachedFolderTreeToken: Int = -1
+
+    var cachedFolderTreeResult: [FolderNode] {
+        if cachedFolderTreeToken == cacheToken, let cached = cachedFolderTree {
+            return cached
+        }
+        let result = folderTree
+        cachedFolderTree = result
+        cachedFolderTreeToken = cacheToken
+        return result
     }
 
     private func buildFolderTree(from folders: [Folder]) -> [FolderNode] {
@@ -174,6 +202,8 @@ final class DocumentListViewModel: ObservableObject {
     private var cachedAllDocuments: [Document]?
     private var cachedAllFolders: [Folder]?
     private var cachedAllTags: [(tag: String, count: Int)]?
+    private var cachedDocumentsByFolder: [UUID: [Document]] = [:]
+    private var cachedSubFolders: [UUID: [Folder]] = [:]
     private var cacheToken: Int = 0
     
     private func invalidateCache() {
@@ -181,11 +211,21 @@ final class DocumentListViewModel: ObservableObject {
         cachedAllDocuments = nil
         cachedAllFolders = nil
         cachedAllTags = nil
+        cachedDocumentsByFolder = [:]
+        cachedSubFolders = [:]
+    }
+
+    func decompressDocumentIfNeeded(id: UUID) throws -> URL {
+        try storage.decompressDocument(id: id)
+    }
+
+    func decompressVersionIfNeeded(documentId: UUID, versionNumber: Int) throws -> URL {
+        try storage.decompressVersion(documentId: documentId, versionNumber: versionNumber)
     }
     
     private func getAllDocumentsCached() -> [Document] {
         if let cached = cachedAllDocuments { return cached }
-        let docs = storage.getAllDocumentsRecursive()
+        let docs = storage.getAllDocumentsRecursiveMetadata()
         cachedAllDocuments = docs
         return docs
     }
@@ -214,21 +254,77 @@ final class DocumentListViewModel: ObservableObject {
         self.editor = editor
         
         setupNotifications()
-        isLoading = true
     }
     
     func loadInitialData() {
-        try? storage.initializeStorage()
-        currentFolder = nil
+        isLoading = false
         isShowingAllDocuments = true
         isShowingTemplates = false
         isShowingInbox = false
         isShowingFlagged = false
-        refreshDocuments()
+        currentFolder = nil
         if navigationHistory.isEmpty {
             recordNavigation(.allDocuments)
         }
-        isLoading = false
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+            try? self.storage.initializeStorage()
+
+            let allFolders = self.storage.getAllFolders()
+            var templatesID: UUID?
+            var inboxID: UUID?
+
+            let rootFolders = allFolders.filter { $0.parentID == nil }
+            if let existing = rootFolders.first(where: { $0.name == self.templatesFolderName }) {
+                templatesID = existing.id
+            } else if let created = try? self.storage.createFolder(name: self.templatesFolderName, parentID: nil) {
+                templatesID = created.id
+            }
+
+            if let existing = rootFolders.first(where: { $0.name == self.inboxFolderName }) {
+                inboxID = existing.id
+                if !existing.protected {
+                    try? self.storage.toggleFolderProtection(id: existing.id)
+                }
+            } else if let created = try? self.storage.createFolder(name: self.inboxFolderName, parentID: nil) {
+                inboxID = created.id
+                try? self.storage.toggleFolderProtection(id: created.id)
+            }
+
+            let allDocs = self.storage.getAllDocumentsRecursiveMetadata()
+            let filteredDocs = allDocs.filter { doc in
+                if let tid = templatesID, doc.parentID == tid { return false }
+                if let iid = inboxID, doc.parentID == iid { return false }
+                return true
+            }
+
+            let allTags = self.storage.getAllTags()
+
+            await MainActor.run {
+                self.cachedAllFolders = allFolders
+                self.allFolders = allFolders.filter { $0.id != templatesID && $0.id != inboxID }
+                self.buildFolderLookupSync()
+                self.cacheToken += 1
+
+                self.templatesFolderID = templatesID
+                self.inboxFolderID = inboxID
+
+                self.cachedAllDocuments = allDocs
+                self.documents = filteredDocs
+
+                self.cachedAllTags = allTags
+                self.allTags = allTags
+            }
+        }
+    }
+    
+    private func buildFolderLookupSync() {
+        var lookup: [UUID: String] = [:]
+        for folder in cachedAllFolders ?? [] where folder.id != templatesFolderID {
+            lookup[folder.id] = folder.name
+        }
+        folderNameLookup = lookup
     }
 
     func freshDocument(for id: UUID) -> Document? {
@@ -239,19 +335,23 @@ final class DocumentListViewModel: ObservableObject {
         ensureTemplatesFolderExists()
         ensureInboxFolderExists()
         
+        print("refreshDocuments: isShowingFlagged=\(isShowingFlagged), cachedAllDocuments count=\(cachedAllDocuments?.count ?? -1)")
+        
         if isShowingFlagged {
-            documents = getAllDocumentsCached().filter { $0.flagged }
+            let allDocs = getAllDocumentsCached()
+            documents = allDocs.filter { $0.flagged }
+            print("refreshDocuments: Flagged view - allDocs=\(allDocs.count), flagged=\(documents.count)")
             isShowingAllDocuments = false
             isShowingTemplates = false
             isShowingInbox = false
         } else if isShowingInbox, let inboxID = inboxFolderID {
-            documents = (try? storage.getDocumentsInFolder(folderID: inboxID)) ?? []
+            documents = getDocumentsInFolderCached(folderID: inboxID)
             isShowingAllDocuments = false
             isShowingTemplates = false
         } else if isShowingTemplates, let templatesID = templatesFolderID {
-            documents = (try? storage.getDocumentsInFolder(folderID: templatesID)) ?? []
+            documents = getDocumentsInFolderCached(folderID: templatesID)
         } else if let folder = currentFolder {
-            documents = (try? storage.getDocumentsInFolder(folderID: folder.id)) ?? []
+            documents = getDocumentsInFolderCached(folderID: folder.id)
             isShowingAllDocuments = false
             isShowingTemplates = false
             isShowingInbox = false
@@ -268,10 +368,11 @@ final class DocumentListViewModel: ObservableObject {
             isShowingInbox = false
             buildFolderLookup()
         }
-        folders = (try? storage.getFolders(parentID: currentFolder?.id)) ?? []
+        folders = getSubFoldersCached(parentID: currentFolder?.id)
         folders = folders.filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
         allFolders = getAllFoldersCached().filter { $0.id != templatesFolderID && $0.id != inboxFolderID }
         allTags = getAllTagsCached()
+        cacheToken += 1
         applyFilters()
         if let sel = selectedDocument, let updated = documents.first(where: { $0.id == sel.id }) {
             selectedDocument = updated
@@ -279,6 +380,21 @@ final class DocumentListViewModel: ObservableObject {
             selectedDocument = fresh
             documentRefreshToken += 1
         }
+    }
+
+    private func getDocumentsInFolderCached(folderID: UUID) -> [Document] {
+        if let cached = cachedDocumentsByFolder[folderID] { return cached }
+        let docs = (try? storage.getDocumentsInFolderMetadata(folderID: folderID)) ?? []
+        cachedDocumentsByFolder[folderID] = docs
+        return docs
+    }
+    
+    private func getSubFoldersCached(parentID: UUID?) -> [Folder] {
+        let key = parentID ?? UUID()
+        if let cached = cachedSubFolders[key] { return cached }
+        let subFolders = (try? storage.getFolders(parentID: parentID)) ?? []
+        cachedSubFolders[key] = subFolders
+        return subFolders
     }
     
     func searchDocuments() {
@@ -292,6 +408,9 @@ final class DocumentListViewModel: ObservableObject {
 
     func navigateToFolder(_ folder: Folder) {
         folderPath.append(folder)
+        isShowingTemplates = false
+        isShowingInbox = false
+        isShowingFlagged = false
         currentFolder = folder
         recordNavigation(.folder(folder))
         refreshDocuments()
@@ -299,16 +418,19 @@ final class DocumentListViewModel: ObservableObject {
 
     func navigateUp() {
         _ = folderPath.popLast()
+        isShowingTemplates = false
+        isShowingInbox = false
+        isShowingFlagged = false
         currentFolder = folderPath.last
         refreshDocuments()
     }
 
     func navigateToRoot() {
         folderPath.removeAll()
-        currentFolder = nil
         isShowingTemplates = false
         isShowingInbox = false
         isShowingFlagged = false
+        currentFolder = nil
         recordNavigation(.allDocuments)
         refreshDocuments()
     }
@@ -316,8 +438,10 @@ final class DocumentListViewModel: ObservableObject {
     func navigateToTemplates() {
         ensureTemplatesFolderExists()
         folderPath.removeAll()
-        currentFolder = nil
         isShowingTemplates = true
+        isShowingInbox = false
+        isShowingFlagged = false
+        currentFolder = nil
         refreshDocuments()
         recordNavigation(.templates)
     }
@@ -357,10 +481,16 @@ final class DocumentListViewModel: ObservableObject {
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
             let destURL = tempDir.appendingPathComponent(newFileName)
+            let sourceURL: URL
+            if let filePath = document.filePath {
+                sourceURL = URL(fileURLWithPath: filePath)
+            } else {
+                sourceURL = try storage.decompressDocument(id: document.id)
+            }
             if FileManager.default.fileExists(atPath: destURL.path) {
                 try FileManager.default.removeItem(at: destURL)
             }
-            try FileManager.default.copyItem(atPath: document.filePath, toPath: destURL.path)
+            try FileManager.default.copyItem(at: sourceURL, to: destURL)
 
             let attributes = try FileManager.default.attributesOfItem(atPath: destURL.path)
             let fileSize = attributes[.size] as? Int64 ?? 0
@@ -368,7 +498,6 @@ final class DocumentListViewModel: ObservableObject {
             let newDoc = Document.createNew(
                 name: newName,
                 fileName: newFileName,
-                filePath: destURL.path,
                 fileSize: fileSize,
                 parentID: document.parentID
             )
@@ -449,36 +578,40 @@ final class DocumentListViewModel: ObservableObject {
         switch navigationHistory[navigationIndex] {
         case .flagged:
             folderPath.removeAll()
-            currentFolder = nil
             isShowingFlagged = true
             isShowingTemplates = false
             isShowingInbox = false
+            currentFolder = nil
         case .allDocuments:
             folderPath.removeAll()
-            currentFolder = nil
             isShowingTemplates = false
             isShowingInbox = false
+            isShowingFlagged = false
+            currentFolder = nil
         case .templates:
             folderPath.removeAll()
-            currentFolder = nil
             ensureTemplatesFolderExists()
             isShowingTemplates = true
             isShowingInbox = false
+            isShowingFlagged = false
+            currentFolder = nil
         case .inbox:
             folderPath.removeAll()
-            currentFolder = nil
             ensureInboxFolderExists()
             isShowingInbox = true
             isShowingTemplates = false
+            isShowingFlagged = false
+            currentFolder = nil
         case .folder(let folder):
+            isShowingTemplates = false
+            isShowingInbox = false
+            isShowingFlagged = false
             if let idx = folderPath.firstIndex(where: { $0.id == folder.id }) {
                 folderPath = Array(folderPath.prefix(through: idx))
             } else {
                 folderPath.append(folder)
             }
             currentFolder = folder
-            isShowingTemplates = false
-            isShowingInbox = false
         }
         refreshDocuments()
     }
@@ -717,12 +850,22 @@ final class DocumentListViewModel: ObservableObject {
         do {
             var updated = document
             updated.name = renameText
-            updated.fileName = renameText + "." + document.fileExtension
+            if !document.fileExtension.isEmpty {
+                updated.fileName = renameText + "." + document.fileExtension
+            } else {
+                updated.fileName = renameText
+            }
+            updated.updatedAt = Date()
             try storage.updateDocument(updated)
-            refreshDocuments()
-            if let fresh = storage.getDocument(id: document.id) {
-                selectedDocument = fresh
+            if let idx = documents.firstIndex(where: { $0.id == document.id }) {
+                documents[idx] = updated
+            }
+            if selectedDocument?.id == document.id {
+                selectedDocument = updated
                 documentRefreshToken += 1
+            }
+            if let idx = cachedAllDocuments?.firstIndex(where: { $0.id == document.id }) {
+                cachedAllDocuments?[idx] = updated
             }
         } catch {
             errorMessage = "Rename failed: \(error.localizedDescription)"
@@ -740,10 +883,11 @@ final class DocumentListViewModel: ObservableObject {
             }
             return
         }
-        let url = URL(fileURLWithPath: document.filePath)
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = true
-        NSWorkspace.shared.open(url, configuration: config)
+        do {
+            try editor.openWithApp(documentId: document.id)
+        } catch {
+            errorMessage = "Failed to open document: \(error.localizedDescription)"
+        }
     }
 
     func exportDocument(_ document: Document) {
@@ -756,8 +900,7 @@ final class DocumentListViewModel: ObservableObject {
         savePanel.nameFieldStringValue = document.fileName
         savePanel.canCreateDirectories = true
 
-        let fileURL = URL(fileURLWithPath: document.filePath)
-        if let utType = UTType(filenameExtension: fileURL.pathExtension) {
+        if let utType = UTType(filenameExtension: document.fileExtension) {
             savePanel.allowedContentTypes = [utType]
         }
 
@@ -767,7 +910,13 @@ final class DocumentListViewModel: ObservableObject {
                 if FileManager.default.fileExists(atPath: destURL.path) {
                     try FileManager.default.removeItem(at: destURL)
                 }
-                try FileManager.default.copyItem(atPath: document.filePath, toPath: destURL.path)
+                let sourceURL: URL
+                if let filePath = document.filePath {
+                    sourceURL = URL(fileURLWithPath: filePath)
+                } else {
+                    sourceURL = try self.storage.decompressDocument(id: document.id)
+                }
+                try FileManager.default.copyItem(at: sourceURL, to: destURL)
             } catch {
                 DispatchQueue.main.async {
                     self.errorMessage = "Failed to export document: \(error.localizedDescription)"
@@ -961,7 +1110,12 @@ final class DocumentListViewModel: ObservableObject {
 
                     let docs = try storage.getDocumentsInFolder(folderID: targetFolder.id)
                     for doc in docs {
-                        let src = URL(fileURLWithPath: doc.filePath)
+                        let src: URL
+                        if let filePath = doc.filePath {
+                            src = URL(fileURLWithPath: filePath)
+                        } else {
+                            src = try storage.decompressDocument(id: doc.id)
+                        }
                         let dest = destDir.appendingPathComponent(doc.fileName)
                         if FileManager.default.fileExists(atPath: src.path) {
                             try FileManager.default.copyItem(at: src, to: dest)
@@ -1101,7 +1255,7 @@ final class DocumentListViewModel: ObservableObject {
         }
     }
 
-    private func performFileImportAsync(fileURL: URL, to folderID: UUID?) async {
+    private func performFileImportAsync(fileURL: URL, to folderID: UUID?) async -> Bool {
         do {
             let fileName = fileURL.lastPathComponent
             let docName = (fileName as NSString).deletingPathExtension
@@ -1118,29 +1272,43 @@ final class DocumentListViewModel: ObservableObject {
             let attributes = try FileManager.default.attributesOfItem(atPath: destURL.path)
             let fileSize = attributes[.size] as? Int64 ?? 0
             
-            let document = Document.createNew(
+            var document = Document.createNew(
                 name: docName,
                 fileName: fileName,
-                filePath: destURL.path,
                 fileSize: fileSize,
                 parentID: folderID
             )
+            document.filePath = destURL.path
             
+            print("Import: Calling saveDocument for \(fileName)")
             try storage.saveDocument(document)
+            print("Import: saveDocument succeeded")
+            
+            print("Import: Calling createVersion for \(fileName)")
             _ = try storage.createVersion(
                 documentId: document.id,
                 sourcePath: destURL.path,
                 changeNotes: "Initial import"
             )
+            print("Import: createVersion succeeded")
             
             await MainActor.run {
                 invalidateCache()
                 refreshDocuments()
             }
+            return true
         } catch {
-            await MainActor.run {
-                errorMessage = "Failed to import document: \(error.localizedDescription)"
+            print("Import error for \(fileURL.lastPathComponent): \(error)")
+            print("Error type: \(type(of: error))")
+            print("Error localizedDescription: \(error.localizedDescription)")
+            if let nsError = error as NSError? {
+                print("Error domain: \(nsError.domain), code: \(nsError.code)")
+                print("Error userInfo: \(nsError.userInfo)")
             }
+            await MainActor.run {
+                errorMessage = "Failed to import \(fileURL.lastPathComponent): \(error.localizedDescription)"
+            }
+            return false
         }
     }
 
@@ -1202,8 +1370,12 @@ final class DocumentListViewModel: ObservableObject {
                     }
                 } else {
                     let parentID = folderMap[parentKey] ?? rootFolder.id
-                    await performFileImportAsync(fileURL: fileURL, to: parentID)
-                    importCount += 1
+                    let success = await performFileImportAsync(fileURL: fileURL, to: parentID)
+                    if success {
+                        importCount += 1
+                    } else {
+                        errorCount += 1
+                    }
 
                     await MainActor.run {
                         importCurrentFile = importCount
@@ -1241,14 +1413,9 @@ final class DocumentListViewModel: ObservableObject {
 
     private func buildFolderLookup() {
         var lookup: [UUID: String] = [:]
-        var stack: [UUID?] = [nil]
-        while let currentParent = stack.popLast() {
-            if let subFolders = try? storage.getFolders(parentID: currentParent) {
-                for folder in subFolders where folder.id != templatesFolderID {
-                    lookup[folder.id] = folder.name
-                    stack.append(folder.id)
-                }
-            }
+        let allF = getAllFoldersCached()
+        for folder in allF where folder.id != templatesFolderID {
+            lookup[folder.id] = folder.name
         }
         folderNameLookup = lookup
     }

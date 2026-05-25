@@ -22,9 +22,9 @@ enum DocumentType: String, Codable {
         switch ext.lowercased() {
         case "pdf": return .pdf
         case "docx", "doc": return .docx
-        case "xlsx", "xls": return .xlsx
+        case "xlsx", "xls", "csv": return .xlsx
         case "pptx", "ppt": return .pptx
-        case "txt": return .txt
+        case "txt", "log", "md", "json", "xml", "yaml", "yml", "html", "htm", "css", "js", "swift", "py", "rb", "sh", "bash", "zsh", "ini", "cfg", "config": return .txt
         case "rtf": return .rtf
         case "pages": return .pages
         case "numbers": return .numbers

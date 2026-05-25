@@ -237,7 +237,7 @@ struct ContentView: View {
                     }
                     
                     sidebarSection("Folders") {
-                        FolderTreeView(nodes: viewModel.folderTree, selection: $sidebarSelection, expandedFolders: $expandedFolders,
+                        FolderTreeView(nodes: viewModel.cachedFolderTreeResult, selection: $sidebarSelection, expandedFolders: $expandedFolders,
                             onDropFile: { folder, providers in
                                 handleMixedDrop(providers: providers, folder: folder)
                             },
@@ -519,7 +519,9 @@ struct ContentView: View {
             return true
         }
         .overlay {
-            if viewModel.documents.isEmpty && !viewModel.isLoading {
+            if viewModel.importProgress != nil {
+                importProgressOverlay
+            } else if viewModel.documents.isEmpty && !viewModel.isLoading {
                 emptyStateView
             }
         }
@@ -566,6 +568,28 @@ struct ContentView: View {
         if viewModel.isShowingTemplates { return "Drag documents here or use \"Add to Templates\" to add templates" }
         if viewModel.isShowingAllDocuments { return "Import documents to get started" }
         return "This folder is empty"
+    }
+
+    private var importProgressOverlay: some View {
+        VStack(spacing: DesignTokens.Spacing.md) {
+            Spacer()
+            VStack(spacing: DesignTokens.Spacing.sm) {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Importing \(viewModel.importCurrentFile) of \(viewModel.importTotalFiles) files")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                ProgressView(value: viewModel.importProgress ?? 0)
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 200)
+            }
+            .padding(DesignTokens.Spacing.lg)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(DesignTokens.Corner.md)
+            .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        }
     }
 
     private var detailView: some View {
@@ -735,7 +759,7 @@ struct ContentView: View {
 
         if !viewModel.allFolders.isEmpty {
             Menu("Move to Folder") {
-                ForEach(viewModel.folderTree) { node in
+                ForEach(viewModel.cachedFolderTreeResult) { node in
                     FolderMenuItem(node: node, action: { folderID in
                         viewModel.moveDocument(documentID: document.id, to: folderID)
                     })
@@ -1145,7 +1169,7 @@ struct FolderMoveSheetView: View {
 
                     Divider()
 
-                    ForEach(viewModel.folderTree) { node in
+                    ForEach(viewModel.cachedFolderTreeResult) { node in
                         FolderMoveTargetRow(
                             node: node,
                             selectedParent: $selectedParent,

@@ -42,8 +42,19 @@ struct DocumentQuickView: View {
     }
 
     private var isQuickLookable: Bool {
-        let types: Set<DocumentType> = [.pages, .numbers, .key, .txt, .rtf, .xlsx, .docx, .pptx]
-        return types.contains(document.documentType)
+        let quickLookExtensions: Set<String> = [
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+            "pages", "numbers", "key",
+            "txt", "rtf", "csv", "log", "conf", "json", "xml", "yaml", "yml", "md", "html", "htm", "css", "js", "swift", "py", "rb", "sh", "bash", "zsh", "ini", "cfg", "config", "plist",
+            "jpg", "jpeg", "png", "gif", "tiff", "tif", "bmp", "ico", "icns", "svg", "heic", "heif", "webp", "raw", "cr2", "nef", "arw",
+            "mp3", "wav", "aiff", "aac", "flac", "ogg", "m4a",
+            "mp4", "mov", "m4v", "avi", "mkv", "wmv", "flv",
+            "zip", "tar", "gz", "bz2", "xz", "7z",
+            "vcard", "vcf", "ics",
+            "font", "ttf", "otf",
+            "eps", "ps",
+        ]
+        return quickLookExtensions.contains(document.fileExtension.lowercased())
     }
 
     var body: some View {
@@ -142,7 +153,7 @@ struct DocumentQuickView: View {
             }
 
             actionPill(label: "Open", icon: "arrow.up.right.square", action: {
-                NSWorkspace.shared.open(URL(fileURLWithPath: document.filePath))
+                viewModel.openDocument(document: document)
             }, disabled: document.isLocked)
         }
         .padding(.horizontal, DesignTokens.Spacing.md)
@@ -333,49 +344,70 @@ struct DocumentQuickView: View {
         previewImage = nil
         isConverting = false
 
-        let url = URL(fileURLWithPath: document.filePath)
-        guard FileManager.default.fileExists(atPath: document.filePath) else { return }
-
-        if isPDF {
-            if let pdf = PDFDocument(url: url) {
-                pdfDocument = pdf
-                totalPages = pdf.pageCount
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    fitToWidth()
-                }
+        do {
+            let url: URL
+            if let filePath = document.filePath {
+                url = URL(fileURLWithPath: filePath)
+            } else {
+                url = try viewModel.decompressDocumentIfNeeded(id: document.id)
             }
-        } else if isQuickLookable {
-            previewURL = url
-        } else {
-            previewURL = url
+            guard FileManager.default.fileExists(atPath: url.path) else { return }
+
+            if isPDF {
+                if let pdf = PDFDocument(url: url) {
+                    pdfDocument = pdf
+                    totalPages = pdf.pageCount
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        fitToWidth()
+                    }
+                }
+            } else if isQuickLookable {
+                previewURL = url
+            }
+        } catch {
+            print("Failed to load document: \(error)")
         }
     }
 
     private func convertToPDF() {
         isConverting = true
-        let url = URL(fileURLWithPath: document.filePath)
-        let generator = PDFPreviewGenerator.shared
-
-        print("QuickView: Starting manual PDF conversion for \(document.filePath)")
-        print("QuickView: File extension = \(url.pathExtension)")
-
+        
         Task {
-            let success = await generator.generatePDF(from: url, documentID: document.id)
-            print("QuickView: PDF conversion result: \(success)")
-
-            await MainActor.run {
-                isConverting = false
-                if success, let pdf = PDFDocument(url: generator.cachedPDFURL(for: document.id)) {
-                    print("QuickView: Loaded converted PDF with \(pdf.pageCount) pages")
-                    pdfDocument = pdf
-                    totalPages = pdf.pageCount
-                    previewURL = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        fitToWidth()
-                    }
+            do {
+                let url: URL
+                if let filePath = document.filePath {
+                    url = URL(fileURLWithPath: filePath)
                 } else {
-                    print("QuickView: Conversion failed or PDF not loadable")
-                    errorMessage = "Failed to convert document to PDF"
+                    url = try viewModel.decompressDocumentIfNeeded(id: document.id)
+                }
+                
+                let generator = PDFPreviewGenerator.shared
+
+                print("QuickView: Starting manual PDF conversion for \(document.fileName)")
+                print("QuickView: File extension = \(url.pathExtension)")
+
+                let success = await generator.generatePDF(from: url, documentID: document.id)
+                print("QuickView: PDF conversion result: \(success)")
+
+                await MainActor.run {
+                    isConverting = false
+                    if success, let pdf = PDFDocument(url: generator.cachedPDFURL(for: document.id)) {
+                        print("QuickView: Loaded converted PDF with \(pdf.pageCount) pages")
+                        pdfDocument = pdf
+                        totalPages = pdf.pageCount
+                        previewURL = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            fitToWidth()
+                        }
+                    } else {
+                        print("QuickView: Conversion failed or PDF not loadable")
+                        errorMessage = "Failed to convert document to PDF"
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isConverting = false
+                    errorMessage = "Failed to decompress document: \(error.localizedDescription)"
                 }
             }
         }
@@ -425,10 +457,11 @@ struct PDFKitView: NSViewRepresentable {
         guard let page = document.page(at: max(0, currentPage - 1)) else { return }
         let pageBounds = page.bounds(for: .mediaBox)
         let viewBounds = pdfView.bounds
-        if viewBounds.width > 0 && pageBounds.width > 0 {
-            let fitWidthScale = viewBounds.width / pageBounds.width
-            pdfView.scaleFactor = fitWidthScale * zoomLevel
-        }
+        guard viewBounds.width > 0, viewBounds.height > 0, pageBounds.width > 0, pageBounds.height > 0 else { return }
+        let fitWidthScale = viewBounds.width / pageBounds.width
+        let newScale = fitWidthScale * zoomLevel
+        guard newScale.isFinite, newScale > 0 else { return }
+        pdfView.scaleFactor = newScale
         if pdfView.currentPage != page {
             pdfView.go(to: page)
         }

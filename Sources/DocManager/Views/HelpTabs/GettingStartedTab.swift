@@ -55,12 +55,12 @@ struct GettingStartedTab: View {
                     title: "Set Up the PandyDoc Printer",
                     steps: [
                         "Click the **Printer Setup** button in the toolbar.",
-                        "Follow the installation wizard to configure the virtual printer.",
-                        "Once installed, you'll see **PandyDoc** in any app's print dialog.",
-                        "Print any document to PandyDoc — it will be automatically captured and saved."
+                        "Click **Install** to add the PDF service.",
+                        "Once installed, you'll see **Save PDF to PandyDoc** in the PDF menu of any app's print dialog.",
+                        "Select it to capture and save the PDF directly to your PandyDoc library."
                     ],
-                    tip: "You can also install the printer via Terminal: sudo ./Scripts/install_printer.sh",
-                    warning: "Administrator access is required for printer installation."
+                    tip: "Click **Remove** in Printer Setup to uninstall the PDF service.",
+                    warning: nil
                 )
                 
                 WalkthroughSection(

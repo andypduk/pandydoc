@@ -7,6 +7,7 @@ enum HelpTab: Int, CaseIterable, Identifiable {
     case templatesVersions = 3
     case printing = 4
     case advanced = 5
+    case backupRestore = 6
     
     var id: Int { rawValue }
     
@@ -18,6 +19,7 @@ enum HelpTab: Int, CaseIterable, Identifiable {
         case .templatesVersions: return "Templates & Versions"
         case .printing: return "Printing"
         case .advanced: return "Advanced"
+        case .backupRestore: return "Backup & Restore"
         }
     }
     
@@ -29,6 +31,7 @@ enum HelpTab: Int, CaseIterable, Identifiable {
         case .templatesVersions: return "doc.on.doc"
         case .printing: return "printer"
         case .advanced: return "gearshape"
+        case .backupRestore: return "externaldrive.badge.timemachine"
         }
     }
 }
@@ -46,6 +49,7 @@ struct HelpView: View {
                 TemplatesVersionsTab().tag(HelpTab.templatesVersions)
                 PrintingTab().tag(HelpTab.printing)
                 AdvancedTab().tag(HelpTab.advanced)
+                BackupRestoreTab().tag(HelpTab.backupRestore)
             }
             .padding(.horizontal)
             .padding(.top)

@@ -22,7 +22,7 @@ class PrintExtension: NSViewController, NSPrintPanelAccessorizing {
         case "summaryTitle":
             return "PandyDoc"
         case "summaryLabel":
-            return "Save to PandyDoc"
+            return "Save PDF to PandyDoc"
         default:
             return ""
         }
@@ -39,7 +39,7 @@ class PrintExtension: NSViewController, NSPrintPanelAccessorizing {
         return [
             [
                 .label: "PandyDoc",
-                .value: "Save to Document Manager"
+                .value: "Save PDF to PandyDoc"
             ]
         ]
     }

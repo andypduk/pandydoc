@@ -21,8 +21,10 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
     private let checkInOut: CheckInOutProtocol
     private let storage: DocumentStorageProtocol
     private let fileWatcher = FileWatcher()
+    private let fileManager = FileManager.default
     private var openDocuments: [UUID: OpenDocumentInfo] = [:]
     private let notificationCenter = NotificationCenter.default
+    private let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("PandyDoc/Editing", isDirectory: true)
     
     struct OpenDocumentInfo {
         let documentId: UUID
@@ -38,6 +40,34 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
         self.checkInOut = checkInOut
         self.storage = storage
         fileWatcher.delegate = self
+        
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleAppWillTerminate()
+        }
+    }
+    
+    private func handleAppWillTerminate() {
+        for documentId in Array(openDocuments.keys) {
+            guard let info = openDocuments[documentId] else { continue }
+            guard FileManager.default.fileExists(atPath: info.tempURL.path) else { continue }
+            
+            guard let document = storage.getDocument(id: documentId) else { continue }
+            guard document.isCheckedOut && document.checkedOutBy == NSFullUserName() else { continue }
+            
+            do {
+                _ = try checkInOut.checkIn(documentId: documentId, changeNotes: "Auto check-in on app close")
+            } catch {
+                print("Auto check-in failed for \(document.name): \(error)")
+            }
+        }
+        openDocuments.removeAll()
+        fileWatcher.stopAll()
     }
     
     func openDocument(documentId: UUID) throws -> OpenDocumentResult {
@@ -49,9 +79,16 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
         let isExternalEdit: Bool
         
         if document.isCheckedOut && document.checkedOutBy == NSFullUserName() {
-            let tempURL = URL(fileURLWithPath: document.filePath)
-                .deletingLastPathComponent()
-                .appendingPathComponent("\(document.id.uuidString)_\(document.fileName)")
+            let tempURL = tempDir.appendingPathComponent("\(document.id.uuidString)_\(document.fileName)")
+            if !fileManager.fileExists(atPath: tempURL.path) {
+                let sourceURL: URL
+                if let filePath = document.filePath {
+                    sourceURL = URL(fileURLWithPath: filePath)
+                } else {
+                    sourceURL = try storage.decompressDocument(id: document.id)
+                }
+                try fileManager.copyItem(at: sourceURL, to: tempURL)
+            }
             fileURL = tempURL
             isExternalEdit = true
         } else {
@@ -125,20 +162,40 @@ final class DocumentEditorService: DocumentEditorProtocol, FileWatcherDelegate {
     }
     
     func fileDidChange(at path: String) {
-        let matchingDoc = openDocuments.first { $0.value.tempURL.path == path }
-        guard let documentId = matchingDoc?.key else { return }
-        
-        do {
-            _ = try checkInOut.saveWorkingCopy(documentId: documentId)
-        } catch {
-            print("Failed to save working copy: \(error)")
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            let matchingDoc = self.openDocuments.first { $0.value.tempURL.path == path }
+            guard let documentId = matchingDoc?.key else {
+                print("FileWatcher: No matching document found for path: \(path)")
+                return
+            }
+            
+            self.saveWorkingCopyWithRetry(documentId: documentId, path: path, attempt: 0)
+        }
+    }
+    
+    private func saveWorkingCopyWithRetry(documentId: UUID, path: String, attempt: Int) {
+        guard attempt < 5 else {
+            print("FileWatcher: Failed to save working copy after 5 attempts for \(documentId)")
+            return
         }
         
-        notificationCenter.post(
-            name: .documentExternallyModified,
-            object: nil,
-            userInfo: ["documentId": documentId, "filePath": path]
-        )
+        do {
+            let updatedDoc = try checkInOut.saveWorkingCopy(documentId: documentId)
+            print("FileWatcher: Working copy saved for \(updatedDoc.name), version \(updatedDoc.currentVersion)")
+            
+            notificationCenter.post(
+                name: .documentExternallyModified,
+                object: nil,
+                userInfo: ["documentId": documentId, "filePath": path]
+            )
+        } catch {
+            print("FileWatcher: Save attempt \(attempt + 1) failed: \(error)")
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.saveWorkingCopyWithRetry(documentId: documentId, path: path, attempt: attempt + 1)
+            }
+        }
     }
     
     func fileWasDeleted(at path: String) {

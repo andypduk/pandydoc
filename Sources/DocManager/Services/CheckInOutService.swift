@@ -82,13 +82,20 @@ final class CheckInOutService: CheckInOutProtocol {
             try fileManager.removeItem(at: tempFileURL)
         }
         
-        try fileManager.copyItem(atPath: document.filePath, toPath: tempFileURL.path)
+        if let filePath = document.filePath {
+            try fileManager.copyItem(atPath: filePath, toPath: tempFileURL.path)
+        } else {
+            let decompressedURL = try storage.decompressDocument(id: document.id)
+            try fileManager.copyItem(at: decompressedURL, to: tempFileURL)
+        }
         
         var updatedDoc = document
         updatedDoc.status = .checkedOut
         updatedDoc.checkedOutBy = NSFullUserName()
         updatedDoc.checkedOutAt = Date()
         try storage.updateDocument(updatedDoc)
+        
+        print("checkOut: Successfully checked out \(document.name), temp file at \(tempFileURL.path)")
         
         return CheckOutResponse(
             success: true,
@@ -103,43 +110,54 @@ final class CheckInOutService: CheckInOutProtocol {
             throw DocumentError.documentNotFound
         }
         
+        print("checkIn: Document \(document.name) status=\(document.status.rawValue), checkedOutBy=\(document.checkedOutBy ?? "nil")")
+        
         guard document.isCheckedOut, document.checkedOutBy == NSFullUserName() else {
             throw DocumentError.documentNotCheckedOut
         }
         
         let tempFileURL = tempDir.appendingPathComponent("\(document.id.uuidString)_\(document.fileName)")
         
+        print("checkIn: Looking for temp file at \(tempFileURL.path)")
         guard fileManager.fileExists(atPath: tempFileURL.path) else {
+            print("checkIn: Temp file not found")
             throw DocumentError.fileNotFound
         }
         
-        let destURL = URL(fileURLWithPath: document.filePath)
-        if fileManager.fileExists(atPath: destURL.path) {
-            try fileManager.removeItem(at: destURL)
+        do {
+            print("checkIn: Creating version...")
+            _ = try storage.createVersion(
+                documentId: documentId,
+                sourcePath: tempFileURL.path,
+                changeNotes: changeNotes
+            )
+            print("checkIn: Version created successfully")
+        } catch {
+            print("checkIn: createVersion failed: \(error)")
+            throw NSError(domain: "PandyDoc", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create version: \(error.localizedDescription)"])
         }
-        try fileManager.copyItem(at: tempFileURL, to: destURL)
         
-        let attributes = try fileManager.attributesOfItem(atPath: destURL.path)
-        let fileSize = attributes[.size] as? Int64 ?? 0
-        
-        _ = try storage.createVersion(
-            documentId: documentId,
-            sourcePath: destURL.path,
-            changeNotes: changeNotes
-        )
-        
-        guard var document = storage.getDocument(id: documentId) else {
-            throw DocumentError.documentNotFound
+        do {
+            print("checkIn: Updating document file data...")
+            try storage.updateDocumentFile(documentId: documentId, sourcePath: tempFileURL.path)
+            print("checkIn: Document file data updated successfully")
+        } catch {
+            print("checkIn: updateDocumentFile failed: \(error)")
+            throw NSError(domain: "PandyDoc", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to update document file: \(error.localizedDescription)"])
         }
-        document.status = .available
-        document.checkedOutBy = nil
-        document.checkedOutAt = nil
-        document.fileSize = fileSize
-        document.updatedAt = Date()
-        try storage.updateDocument(document)
+        
+        do {
+            print("checkIn: Updating document status to available...")
+            try storage.updateDocumentCheckIn(id: documentId)
+            print("checkIn: Document status updated successfully")
+        } catch {
+            print("checkIn: updateDocumentCheckIn failed: \(error)")
+            throw NSError(domain: "PandyDoc", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to update document status: \(error.localizedDescription)"])
+        }
         
         try? fileManager.removeItem(at: tempFileURL)
         
+        print("checkIn: Successfully checked in \(document.name)")
         return document
     }
     
@@ -148,38 +166,36 @@ final class CheckInOutService: CheckInOutProtocol {
             throw DocumentError.documentNotFound
         }
         
+        print("saveWorkingCopy: Document \(document.name) status=\(document.status.rawValue), checkedOutBy=\(document.checkedOutBy ?? "nil")")
+        
         guard document.isCheckedOut, document.checkedOutBy == NSFullUserName() else {
+            print("saveWorkingCopy: Document not checked out by current user")
             throw DocumentError.documentNotCheckedOut
         }
         
         let tempFileURL = tempDir.appendingPathComponent("\(document.id.uuidString)_\(document.fileName)")
         
+        print("saveWorkingCopy: Looking for temp file at \(tempFileURL.path)")
         guard fileManager.fileExists(atPath: tempFileURL.path) else {
+            print("saveWorkingCopy: Temp file not found")
             throw DocumentError.fileNotFound
         }
         
-        let destURL = URL(fileURLWithPath: document.filePath)
-        if fileManager.fileExists(atPath: destURL.path) {
-            try fileManager.removeItem(at: destURL)
-        }
-        try fileManager.copyItem(at: tempFileURL, to: destURL)
-        
-        let attributes = try fileManager.attributesOfItem(atPath: destURL.path)
-        let fileSize = attributes[.size] as? Int64 ?? 0
-        
         _ = try storage.createVersion(
             documentId: documentId,
-            sourcePath: destURL.path,
+            sourcePath: tempFileURL.path,
             changeNotes: "Working copy saved"
         )
+        
+        try storage.updateDocumentFile(documentId: documentId, sourcePath: tempFileURL.path)
         
         guard var document = storage.getDocument(id: documentId) else {
             throw DocumentError.documentNotFound
         }
-        document.fileSize = fileSize
         document.updatedAt = Date()
         try storage.updateDocument(document)
         
+        print("saveWorkingCopy: Successfully saved working copy for \(document.name), version \(document.currentVersion)")
         return document
     }
     
@@ -249,8 +265,13 @@ final class CheckInOutService: CheckInOutProtocol {
         
         if !fileManager.fileExists(atPath: tempFileURL.path) {
             if document.isCheckedOut && document.checkedOutBy == NSFullUserName() {
-                let destURL = URL(fileURLWithPath: document.filePath)
-                try fileManager.copyItem(at: destURL, to: tempFileURL)
+                let sourceURL: URL
+                if let filePath = document.filePath {
+                    sourceURL = URL(fileURLWithPath: filePath)
+                } else {
+                    sourceURL = try storage.decompressDocument(id: document.id)
+                }
+                try fileManager.copyItem(at: sourceURL, to: tempFileURL)
             } else {
                 _ = try checkOut(documentId: documentId)
             }

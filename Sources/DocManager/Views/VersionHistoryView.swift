@@ -99,8 +99,7 @@ struct VersionRowView: View {
         savePanel.nameFieldStringValue = version.fileName
         savePanel.canCreateDirectories = true
 
-        let fileURL = URL(fileURLWithPath: version.filePath)
-        if let utType = UTType(filenameExtension: fileURL.pathExtension) {
+        if let utType = UTType(filenameExtension: (version.fileName as NSString).pathExtension) {
             savePanel.allowedContentTypes = [utType]
         }
 
@@ -110,7 +109,13 @@ struct VersionRowView: View {
                 if FileManager.default.fileExists(atPath: destURL.path) {
                     try FileManager.default.removeItem(at: destURL)
                 }
-                try FileManager.default.copyItem(atPath: version.filePath, toPath: destURL.path)
+                let sourceURL: URL
+                if let filePath = version.filePath {
+                    sourceURL = URL(fileURLWithPath: filePath)
+                } else {
+                    sourceURL = try self.viewModel.decompressVersionIfNeeded(documentId: version.documentId, versionNumber: version.versionNumber)
+                }
+                try FileManager.default.copyItem(at: sourceURL, to: destURL)
             } catch {
                 DispatchQueue.main.async {
                     viewModel.errorMessage = "Failed to save version: \(error.localizedDescription)"

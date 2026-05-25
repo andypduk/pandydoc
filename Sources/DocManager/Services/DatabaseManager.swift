@@ -52,7 +52,8 @@ final class DatabaseManager {
     private let updatedAt = SQLite.Expression<Date>("updated_at")
     private let tags = SQLite.Expression<String>("tags")
     private let notes = SQLite.Expression<String>("notes")
-    private let filePath = SQLite.Expression<String>("file_path")
+    private let filePath = SQLite.Expression<String?>("file_path")
+    private let fileData = SQLiteExpression<Data?>("file_data")
     private let thumbnailPath = SQLite.Expression<String?>("thumbnail_path")
     private let parentIDCol = SQLite.Expression<String?>("parent_id")
     private let docProtected = SQLite.Expression<Bool>("protected")
@@ -71,7 +72,8 @@ final class DatabaseManager {
     private let documentId = SQLite.Expression<String>("document_id")
     private let versionNumber = SQLite.Expression<Int>("version_number")
     private let versionFileName = SQLite.Expression<String>("file_name")
-    private let versionFilePath = SQLite.Expression<String>("file_path")
+    private let versionFilePath = SQLite.Expression<String?>("file_path")
+    private let versionFileData = SQLiteExpression<Data?>("file_data")
     private let versionFileSize = SQLite.Expression<Int64>("file_size")
     private let versionCreatedBy = SQLite.Expression<String>("created_by")
     private let versionCreatedAt = SQLite.Expression<Date>("created_at")
@@ -119,6 +121,13 @@ final class DatabaseManager {
         try db!.execute("PRAGMA journal_mode=WAL")
         try db!.execute("PRAGMA synchronous=NORMAL")
         db!.busyTimeout = 5.0
+        try runMigrations()
+    }
+
+    func ensureMigrations() throws {
+        guard let db else {
+            throw DatabaseError.connectionFailed
+        }
         try runMigrations()
     }
     
@@ -187,7 +196,32 @@ final class DatabaseManager {
             try db.execute(sql)
             print("Added column \(columnName) to \(tableName)")
         } catch {
-            print("Column \(columnName) already exists or error: \(error)")
+            print("Column \(columnName) already exists or error adding to \(tableName): \(error)")
+        }
+    }
+
+    private func verifyColumnExists(db: Connection, tableName: String, columnName: String) -> Bool {
+        do {
+            let rows = try db.prepare("PRAGMA table_info(\(tableName))")
+            print("Schema for \(tableName):")
+            for row in rows {
+                let cid = row[0] as? Int64 ?? -1
+                let name = row[1] as? String ?? "unknown"
+                let type = row[2] as? String ?? "unknown"
+                let notNull = row[3] as? Int64 ?? 0
+                let defaultValue = row[4] as? String ?? "NULL"
+                let pk = row[5] as? Int64 ?? 0
+                print("  Column \(cid): \(name) (\(type), notnull=\(notNull), default=\(defaultValue), pk=\(pk))")
+                if name == columnName {
+                    print("Column \(columnName) in \(tableName): EXISTS")
+                    return true
+                }
+            }
+            print("Column \(columnName) in \(tableName): MISSING")
+            return false
+        } catch {
+            print("Failed to verify column \(columnName) in \(tableName): \(error)")
+            return false
         }
     }
     
@@ -209,12 +243,13 @@ final class DatabaseManager {
 
         print("Database schema version: \(schemaVersion)")
 
-        // Always try to add protected columns (fails silently if they exist)
-        addColumnIfNotExists(db: db, tableName: "documents", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
-        addColumnIfNotExists(db: db, tableName: "folders", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
-        addColumnIfNotExists(db: db, tableName: "documents", columnName: "flagged", type: "BOOLEAN", defaultValue: "0")
-
-        if schemaVersion == "4" {
+        if schemaVersion == "5" {
+            // Already up to date, just verify columns exist
+            addColumnIfNotExists(db: db, tableName: "documents", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
+            addColumnIfNotExists(db: db, tableName: "folders", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
+            addColumnIfNotExists(db: db, tableName: "documents", columnName: "flagged", type: "BOOLEAN", defaultValue: "0")
+            addColumnIfNotExists(db: db, tableName: "documents", columnName: "file_data", type: "BLOB", defaultValue: "NULL")
+            addColumnIfNotExists(db: db, tableName: "versions", columnName: "file_data", type: "BLOB", defaultValue: "NULL")
             return
         }
 
@@ -236,6 +271,9 @@ final class DatabaseManager {
                 t.column(notes, defaultValue: "")
                 t.column(filePath)
                 t.column(thumbnailPath)
+                t.column(docProtected, defaultValue: false)
+                t.column(flagged, defaultValue: false)
+                t.column(fileData)
             })
 
             try db.run(versions.create(ifNotExists: true) { t in
@@ -249,6 +287,7 @@ final class DatabaseManager {
                 t.column(versionCreatedAt)
                 t.column(versionChecksum)
                 t.column(versionChangeNotes)
+                t.column(versionFileData)
             })
 
             try db.run(documents.createIndex(status))
@@ -270,12 +309,17 @@ final class DatabaseManager {
         addColumnIfNotExists(db: db, tableName: "documents", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
         addColumnIfNotExists(db: db, tableName: "folders", columnName: "protected", type: "BOOLEAN", defaultValue: "0")
         addColumnIfNotExists(db: db, tableName: "documents", columnName: "flagged", type: "BOOLEAN", defaultValue: "0")
+        addColumnIfNotExists(db: db, tableName: "documents", columnName: "file_data", type: "BLOB", defaultValue: "NULL")
+        addColumnIfNotExists(db: db, tableName: "versions", columnName: "file_data", type: "BLOB", defaultValue: "NULL")
+
+        try? db.run(documents.createIndex(Expression<String?>("parent_id")))
+        try? db.run(documents.createIndex(updatedAt))
 
         try? migrateFromJSON(db: db)
 
         try db.run(metadata.insert(or: .replace,
             metaKey <- "schema_version",
-            metaValue <- "4"
+            metaValue <- "5"
         ))
     }
     
@@ -318,53 +362,214 @@ final class DatabaseManager {
         try? FileManager.default.moveItem(at: metaPath, to: metaPath.appendingPathExtension("migrated"))
     }
     
-    func insertDocument(db: Connection, document: Document) throws {
-        let insert = documents.insert(
-            id <- document.id.uuidString,
-            name <- document.name,
-            fileName <- document.fileName,
-            fileExtension <- document.fileExtension,
-            documentType <- document.documentType.rawValue,
-            status <- document.status.rawValue,
-            checkedOutBy <- document.checkedOutBy,
-            checkedOutAt <- document.checkedOutAt,
-            currentVersion <- document.currentVersion,
-            fileSize <- document.fileSize,
-            createdAt <- document.createdAt,
-            updatedAt <- document.updatedAt,
-            tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
-            notes <- document.notes,
-            parentIDCol <- document.parentID?.uuidString,
-            filePath <- document.filePath,
-            thumbnailPath <- document.thumbnailPath,
-            docProtected <- document.protected,
-            flagged <- document.flagged
-        )
-        try db.run(insert)
+    func insertDocument(db: Connection, document: Document, fileData: Data? = nil) throws {
+        print("Inserting document: \(document.id), fileData size: \(fileData?.count ?? 0)")
+        let filePathValue = document.filePath ?? ""
+        if let fileData = fileData {
+            let insert = documents.insert(
+                id <- document.id.uuidString,
+                name <- document.name,
+                fileName <- document.fileName,
+                fileExtension <- document.fileExtension,
+                documentType <- document.documentType.rawValue,
+                status <- document.status.rawValue,
+                checkedOutBy <- document.checkedOutBy,
+                checkedOutAt <- document.checkedOutAt,
+                currentVersion <- document.currentVersion,
+                fileSize <- document.fileSize,
+                createdAt <- document.createdAt,
+                updatedAt <- document.updatedAt,
+                tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
+                notes <- document.notes,
+                parentIDCol <- document.parentID?.uuidString,
+                filePath <- filePathValue,
+                thumbnailPath <- document.thumbnailPath,
+                docProtected <- document.protected,
+                flagged <- document.flagged,
+                self.fileData <- fileData
+            )
+            do {
+                try db.run(insert)
+                print("Document inserted successfully with fileData")
+            } catch {
+                print("Document insert with fileData failed: \(error)")
+                print("SQLite error details: \(String(describing: error))")
+                let insertFallback = documents.insert(
+                    id <- document.id.uuidString,
+                    name <- document.name,
+                    fileName <- document.fileName,
+                    fileExtension <- document.fileExtension,
+                    documentType <- document.documentType.rawValue,
+                    status <- document.status.rawValue,
+                    checkedOutBy <- document.checkedOutBy,
+                    checkedOutAt <- document.checkedOutAt,
+                    currentVersion <- document.currentVersion,
+                    fileSize <- document.fileSize,
+                    createdAt <- document.createdAt,
+                    updatedAt <- document.updatedAt,
+                    tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
+                    notes <- document.notes,
+                    parentIDCol <- document.parentID?.uuidString,
+                    filePath <- filePathValue,
+                    thumbnailPath <- document.thumbnailPath,
+                    docProtected <- document.protected,
+                    flagged <- document.flagged
+                )
+                do {
+                    try db.run(insertFallback)
+                    print("Document inserted successfully without fileData (column missing)")
+                } catch {
+                    print("Document insert fallback also failed: \(error)")
+                    throw error
+                }
+            }
+        } else {
+            let insert = documents.insert(
+                id <- document.id.uuidString,
+                name <- document.name,
+                fileName <- document.fileName,
+                fileExtension <- document.fileExtension,
+                documentType <- document.documentType.rawValue,
+                status <- document.status.rawValue,
+                checkedOutBy <- document.checkedOutBy,
+                checkedOutAt <- document.checkedOutAt,
+                currentVersion <- document.currentVersion,
+                fileSize <- document.fileSize,
+                createdAt <- document.createdAt,
+                updatedAt <- document.updatedAt,
+                tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
+                notes <- document.notes,
+                parentIDCol <- document.parentID?.uuidString,
+                filePath <- filePathValue,
+                thumbnailPath <- document.thumbnailPath,
+                docProtected <- document.protected,
+                flagged <- document.flagged
+            )
+            do {
+                try db.run(insert)
+                print("Document inserted successfully without fileData")
+            } catch {
+                print("Document insert failed: \(error)")
+                throw error
+            }
+        }
     }
     
-    func updateDocument(db: Connection, document: Document) throws {
+    func updateDocument(db: Connection, document: Document, fileData: Data? = nil) throws {
         let doc = documents.filter(id == document.id.uuidString)
-        try db.run(doc.update(
-            name <- document.name,
-            fileName <- document.fileName,
-            fileExtension <- document.fileExtension,
-            documentType <- document.documentType.rawValue,
-            status <- document.status.rawValue,
-            checkedOutBy <- document.checkedOutBy,
-            checkedOutAt <- document.checkedOutAt,
-            currentVersion <- document.currentVersion,
-            fileSize <- document.fileSize,
-            createdAt <- document.createdAt,
-            updatedAt <- document.updatedAt,
-            tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
-            notes <- document.notes,
-            parentIDCol <- document.parentID?.uuidString,
-            filePath <- document.filePath,
-            thumbnailPath <- document.thumbnailPath,
-            docProtected <- document.protected,
-            flagged <- document.flagged
-        ))
+        let filePathValue = document.filePath ?? ""
+        print("updateDocument: Updating document \(document.id), flagged=\(document.flagged)")
+        
+        let verifyBefore = try db.pluck(doc)
+        if let row = verifyBefore {
+            print("updateDocument: Before update - flagged in DB = \(row[flagged])")
+        }
+        
+        if let fileData = fileData {
+            try db.run(doc.update(
+                name <- document.name,
+                fileName <- document.fileName,
+                fileExtension <- document.fileExtension,
+                documentType <- document.documentType.rawValue,
+                status <- document.status.rawValue,
+                checkedOutBy <- document.checkedOutBy,
+                checkedOutAt <- document.checkedOutAt,
+                currentVersion <- document.currentVersion,
+                fileSize <- document.fileSize,
+                createdAt <- document.createdAt,
+                updatedAt <- document.updatedAt,
+                tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
+                notes <- document.notes,
+                parentIDCol <- document.parentID?.uuidString,
+                filePath <- filePathValue,
+                thumbnailPath <- document.thumbnailPath,
+                docProtected <- document.protected,
+                flagged <- document.flagged,
+                self.fileData <- fileData
+            ))
+        } else {
+            try db.run(doc.update(
+                name <- document.name,
+                fileName <- document.fileName,
+                fileExtension <- document.fileExtension,
+                documentType <- document.documentType.rawValue,
+                status <- document.status.rawValue,
+                checkedOutBy <- document.checkedOutBy,
+                checkedOutAt <- document.checkedOutAt,
+                currentVersion <- document.currentVersion,
+                fileSize <- document.fileSize,
+                createdAt <- document.createdAt,
+                updatedAt <- document.updatedAt,
+                tags <- try JSONEncoder().encode(document.tags).base64EncodedString(),
+                notes <- document.notes,
+                parentIDCol <- document.parentID?.uuidString,
+                filePath <- filePathValue,
+                thumbnailPath <- document.thumbnailPath,
+                docProtected <- document.protected,
+                flagged <- document.flagged
+            ))
+        }
+        print("updateDocument: Update succeeded")
+        
+        let verifyAfter = try db.pluck(doc)
+        if let row = verifyAfter {
+            print("updateDocument: After update - flagged in DB = \(row[flagged])")
+        }
+    }
+    
+    func updateDocumentCheckIn(db: Connection, id: UUID) throws {
+        let doc = documents.filter(self.id == id.uuidString)
+        print("updateDocumentCheckIn: Updating document \(id) to available")
+        do {
+            try db.run(doc.update(
+                status <- "available",
+                checkedOutBy <- nil as String?,
+                checkedOutAt <- nil as Date?,
+                updatedAt <- Date()
+            ))
+            print("updateDocumentCheckIn: Successfully updated")
+        } catch {
+            print("updateDocumentCheckIn: Failed with error: \(error)")
+            throw error
+        }
+    }
+
+    func getDocumentWithFileData(db: Connection, id: UUID) throws -> (Document, Data)? {
+        let doc = documents.filter(self.id == id.uuidString)
+        guard let row = try db.pluck(doc) else { return nil }
+        let document = try rowToDocument(row)
+        let fileData = try? row[self.fileData]
+        guard let fileData = fileData else { return nil }
+        return (document, fileData)
+    }
+
+    func getDocumentFileData(db: Connection, id: UUID) throws -> Data? {
+        let doc = documents.filter(self.id == id.uuidString)
+        guard let row = try db.pluck(doc) else { return nil }
+        return try? row[self.fileData]
+    }
+
+    func updateDocumentFileData(db: Connection, id: UUID, fileData: Data, fileSize: Int64) throws {
+        let doc = documents.filter(self.id == id.uuidString)
+        do {
+            print("updateDocumentFileData: Attempting to update file_data and file_size for document \(id)")
+            try db.run(doc.update(
+                self.fileData <- fileData,
+                self.fileSize <- fileSize
+            ))
+            print("updateDocumentFileData: Successfully updated file_data and file_size")
+        } catch {
+            print("updateDocumentFileData: First attempt failed: \(error), trying fallback...")
+            do {
+                try db.run(doc.update(
+                    self.fileSize <- fileSize
+                ))
+                print("updateDocumentFileData: Fallback succeeded (file_size only)")
+            } catch {
+                print("updateDocumentFileData: Fallback also failed: \(error)")
+                throw error
+            }
+        }
     }
     
     func getDocument(db: Connection, id: UUID) throws -> Document? {
@@ -383,6 +588,23 @@ final class DatabaseManager {
         return try db.prepare(query).map { try rowToDocument($0) }
     }
 
+    func getAllDocumentsRecursiveMetadata(db: Connection) throws -> [Document] {
+        let sql = """
+            SELECT id, name, file_name, file_extension, document_type, status, checked_out_by, checked_out_at,
+                   current_version, file_size, created_at, updated_at, tags, notes, parent_id, file_path,
+                   thumbnail_path, protected, flagged
+            FROM documents ORDER BY updated_at DESC
+        """
+        let docs = try db.prepare(sql).map { try rowToDocumentFromMetadata($0) }
+        let flaggedCount = docs.filter { $0.flagged }.count
+        print("getAllDocumentsRecursiveMetadata: Loaded \(docs.count) documents, \(flaggedCount) flagged")
+        
+        let rawFlagged = try db.prepare("SELECT id, flagged FROM documents WHERE flagged = 1").map { $0[0] as? String ?? "?" }
+        print("getAllDocumentsRecursiveMetadata: Raw flagged docs: \(rawFlagged)")
+        
+        return docs
+    }
+
     func getCheckedOutByUser(db: Connection, username: String) throws -> [Document] {
         let query = documents.filter(status == "checkedOut" && checkedOutBy == username)
             .order(updatedAt.desc)
@@ -392,6 +614,16 @@ final class DatabaseManager {
     func getDocumentsInFolder(db: Connection, folderID: UUID) throws -> [Document] {
         let query = documents.filter(parentIDCol == folderID.uuidString).order(updatedAt.desc)
         return try db.prepare(query).map { try rowToDocument($0) }
+    }
+
+    func getDocumentsInFolderMetadata(db: Connection, folderID: UUID) throws -> [Document] {
+        let sql = """
+            SELECT id, name, file_name, file_extension, document_type, status, checked_out_by, checked_out_at,
+                   current_version, file_size, created_at, updated_at, tags, notes, parent_id, file_path,
+                   thumbnail_path, protected, flagged
+            FROM documents WHERE parent_id = ? ORDER BY updated_at DESC
+        """
+        return try db.prepare(sql, [folderID.uuidString]).map { try rowToDocumentFromMetadata($0) }
     }
     
     func searchDocuments(db: Connection, query: String, tags: [String]) throws -> [Document] {
@@ -420,10 +652,13 @@ final class DatabaseManager {
     }
     
     func getAllTags(db: Connection) throws -> [(tag: String, count: Int)] {
-        let allDocs = try db.prepare(documents).map { try rowToDocument($0) }
+        let tagsQuery = documents.select(tags)
         var tagCounts: [String: Int] = [:]
-        for doc in allDocs {
-            for tag in doc.tags {
+        for row in try db.prepare(tagsQuery) {
+            let tagsStr = row[tags]
+            guard let tagsData = Data(base64Encoded: tagsStr),
+                  let tagArray = try JSONSerialization.jsonObject(with: tagsData) as? [String] else { continue }
+            for tag in tagArray {
                 let normalized = tag.lowercased()
                 tagCounts[normalized, default: 0] += 1
             }
@@ -439,20 +674,82 @@ final class DatabaseManager {
         try db.run(docVersions.delete())
     }
     
-    func insertVersion(db: Connection, version: DocumentVersion) throws {
-        let insert = versions.insert(
-            versionId <- version.id.uuidString,
-            documentId <- version.documentId.uuidString,
-            versionNumber <- version.versionNumber,
-            versionFileName <- version.fileName,
-            versionFilePath <- version.filePath,
-            versionFileSize <- version.fileSize,
-            versionCreatedBy <- version.createdBy,
-            versionCreatedAt <- version.createdAt,
-            versionChecksum <- version.checksum,
-            versionChangeNotes <- version.changeNotes
-        )
-        try db.run(insert)
+    func insertVersion(db: Connection, version: DocumentVersion, fileData: Data? = nil) throws {
+        let filePathValue = version.filePath ?? ""
+        if let fileData = fileData {
+            let insert = versions.insert(
+                versionId <- version.id.uuidString,
+                documentId <- version.documentId.uuidString,
+                versionNumber <- version.versionNumber,
+                versionFileName <- version.fileName,
+                versionFilePath <- filePathValue,
+                versionFileSize <- version.fileSize,
+                versionCreatedBy <- version.createdBy,
+                versionCreatedAt <- version.createdAt,
+                versionChecksum <- version.checksum,
+                versionChangeNotes <- version.changeNotes,
+                self.versionFileData <- fileData
+            )
+            do {
+                try db.run(insert)
+            } catch {
+                let insertFallback = versions.insert(
+                    versionId <- version.id.uuidString,
+                    documentId <- version.documentId.uuidString,
+                    versionNumber <- version.versionNumber,
+                    versionFileName <- version.fileName,
+                    versionFilePath <- filePathValue,
+                    versionFileSize <- version.fileSize,
+                    versionCreatedBy <- version.createdBy,
+                    versionCreatedAt <- version.createdAt,
+                    versionChecksum <- version.checksum,
+                    versionChangeNotes <- version.changeNotes
+                )
+                try db.run(insertFallback)
+            }
+        } else {
+            let insert = versions.insert(
+                versionId <- version.id.uuidString,
+                documentId <- version.documentId.uuidString,
+                versionNumber <- version.versionNumber,
+                versionFileName <- version.fileName,
+                versionFilePath <- filePathValue,
+                versionFileSize <- version.fileSize,
+                versionCreatedBy <- version.createdBy,
+                versionCreatedAt <- version.createdAt,
+                versionChecksum <- version.checksum,
+                versionChangeNotes <- version.changeNotes
+            )
+            try db.run(insert)
+        }
+    }
+
+    func getVersionWithFileData(db: Connection, documentId: UUID, versionNum: Int) throws -> (DocumentVersion, Data)? {
+        let query = versions.filter(self.documentId == documentId.uuidString && self.versionNumber == versionNum)
+        guard let row = try db.pluck(query) else { return nil }
+        let version = rowToVersion(row)
+        guard let fileData = try? row[self.versionFileData] else { return nil }
+        return (version, fileData)
+    }
+
+    func getVersionFileData(db: Connection, documentId: UUID, versionNumber: Int) throws -> Data? {
+        let query = versions.filter(self.documentId == documentId.uuidString && self.versionNumber == versionNumber)
+        guard let row = try db.pluck(query) else { return nil }
+        return try? row[self.versionFileData]
+    }
+
+    func updateVersionFileData(db: Connection, versionId: UUID, fileData: Data, fileSize: Int64) throws {
+        let version = versions.filter(self.versionId == versionId.uuidString)
+        do {
+            try db.run(version.update(
+                self.versionFileData <- fileData,
+                self.versionFileSize <- fileSize
+            ))
+        } catch {
+            try db.run(version.update(
+                self.versionFileSize <- fileSize
+            ))
+        }
     }
     
     func getVersions(db: Connection, documentId: UUID) throws -> [DocumentVersion] {
@@ -491,10 +788,90 @@ final class DatabaseManager {
             tags: tagsData ?? [],
             notes: row[notes],
             parentID: row[parentIDCol].flatMap { UUID(uuidString: $0) },
-            filePath: row[filePath],
+            filePath: (row[filePath] ?? "").isEmpty ? nil : row[filePath],
             thumbnailPath: row[thumbnailPath],
             protected: row[docProtected],
             flagged: row[flagged]
+        )
+    }
+    
+    private func rowToDocumentFromMetadata(_ bindings: [Binding?]) throws -> Document {
+        guard bindings.count >= 19 else { throw DatabaseError.queryFailed("Insufficient columns in metadata row") }
+        
+        let str = { (idx: Int) -> String in
+            if let s = bindings[idx] as? String { return s }
+            if let d = bindings[idx] as? Date { return ISO8601DateFormatter().string(from: d) }
+            return String(describing: bindings[idx] ?? "")
+        }
+        let optStr = { (idx: Int) -> String? in
+            if bindings[idx] == nil || bindings[idx] is NSNull { return nil }
+            return bindings[idx] as? String
+        }
+        let dateFromStr = { (idx: Int) -> Date in
+            if let d = bindings[idx] as? Date { return d }
+            if let s = bindings[idx] as? String {
+                let formatter = ISO8601DateFormatter()
+                return formatter.date(from: s) ?? Date()
+            }
+            return Date()
+        }
+        let optDateFromStr = { (idx: Int) -> Date? in
+            if bindings[idx] == nil || bindings[idx] is NSNull { return nil }
+            if let d = bindings[idx] as? Date { return d }
+            if let s = bindings[idx] as? String {
+                let formatter = ISO8601DateFormatter()
+                return formatter.date(from: s)
+            }
+            return nil
+        }
+        let intVal = { (idx: Int) -> Int in
+            if let i = bindings[idx] as? Int { return i }
+            if let d = bindings[idx] as? Double { return Int(d) }
+            return 0
+        }
+        let int64Val = { (idx: Int) -> Int64 in
+            if let i = bindings[idx] as? Int64 { return i }
+            if let i = bindings[idx] as? Int { return Int64(i) }
+            if let d = bindings[idx] as? Double { return Int64(d) }
+            return 0
+        }
+        let boolVal = { (idx: Int) -> Bool in
+            if let b = bindings[idx] as? Bool { return b }
+            if let i = bindings[idx] as? Int { return i != 0 }
+            if let i = bindings[idx] as? Int64 { return i != 0 }
+            if let i = bindings[idx] as? Double { return i != 0 }
+            return false
+        }
+        
+        let tagsStr = optStr(12) ?? "[]"
+        let tagsData = Data(base64Encoded: tagsStr) ?? Data()
+        let tagArray = (try? JSONSerialization.jsonObject(with: tagsData) as? [String]) ?? []
+        
+        let filePathVal = optStr(15)
+        
+        let flaggedRaw = bindings[18]
+        let flagged = boolVal(18)
+        
+        return Document(
+            id: UUID(uuidString: str(0)) ?? UUID(),
+            name: str(1),
+            fileName: str(2),
+            fileExtension: str(3),
+            documentType: DocumentType(rawValue: str(4)) ?? .other,
+            status: DocumentStatus(rawValue: str(5)) ?? .available,
+            checkedOutBy: optStr(6),
+            checkedOutAt: optDateFromStr(7),
+            currentVersion: intVal(8),
+            fileSize: int64Val(9),
+            createdAt: dateFromStr(10),
+            updatedAt: dateFromStr(11),
+            tags: tagArray,
+            notes: str(13),
+            parentID: optStr(14).flatMap { UUID(uuidString: $0) },
+            filePath: (filePathVal ?? "").isEmpty ? nil : filePathVal,
+            thumbnailPath: optStr(16),
+            protected: boolVal(17),
+            flagged: flagged
         )
     }
     
@@ -504,7 +881,7 @@ final class DatabaseManager {
             documentId: UUID(uuidString: row[documentId]) ?? UUID(),
             versionNumber: row[versionNumber],
             fileName: row[versionFileName],
-            filePath: row[versionFilePath],
+            filePath: (row[versionFilePath] ?? "").isEmpty ? nil : row[versionFilePath],
             fileSize: row[versionFileSize],
             createdBy: row[versionCreatedBy],
             createdAt: row[versionCreatedAt],

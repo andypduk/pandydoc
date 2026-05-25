@@ -41,7 +41,7 @@ struct PrintingTab: View {
                         "The PDF is automatically captured and saved to PandyDoc.",
                         "A notification confirms the document was received."
                     ],
-                    tip: "You can also use the PDF dropdown in the print dialog and select **Save to PandyDoc**.",
+                    tip: "You can also use the PDF dropdown in the print dialog and select **Save PDF to PandyDoc**.",
                     warning: nil
                 )
                 

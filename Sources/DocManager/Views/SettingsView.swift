@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var statusMessage: String?
     @State private var showStatus = false
     @State private var showBackupSheet = false
+    @State private var showRestoreSheet = false
     @State private var isICloudAvailable = false
     @State private var showApiKey = false
     @State private var showRegenerateAlert = false
@@ -221,6 +222,10 @@ struct SettingsView: View {
                     Label("Back Up Database...", systemImage: "arrow.up.doc")
                 }
 
+                Button(action: { showRestoreSheet = true }) {
+                    Label("Restore from Backup...", systemImage: "arrow.down.doc")
+                }
+
                 Button(action: { showNewDatabaseConfirmation = true }) {
                     Label("Create New Database", systemImage: "plus.rectangle")
                 }
@@ -235,6 +240,9 @@ struct SettingsView: View {
         .padding()
         .sheet(isPresented: $showBackupSheet) {
             BackupSheet(isICloudAvailable: isICloudAvailable, statusMessage: $statusMessage, showStatus: $showStatus)
+        }
+        .sheet(isPresented: $showRestoreSheet) {
+            RestoreSheet(statusMessage: $statusMessage, showStatus: $showStatus)
         }
     }
 
@@ -509,6 +517,103 @@ struct BackupSheet: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+}
+
+struct RestoreSheet: View {
+    @Binding var statusMessage: String?
+    @Binding var showStatus: Bool
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var isRestoring = false
+    @State private var restoreProgress: String = ""
+    
+    private let dbManager = DatabaseManager.shared
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "externaldrive.fill.badge.arrow.down")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+                Text("Restore from Backup")
+                    .font(.headline)
+                Spacer()
+            }
+            
+            Text("Select a previously created backup folder to restore. This will replace all current data.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+            
+            VStack(spacing: 12) {
+                Button(action: { restoreFromLocation() }) {
+                    Label("Choose Backup Folder...", systemImage: "folder")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+            
+            if isRestoring {
+                ProgressView(restoreProgress)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            
+            Spacer()
+            
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    dismiss()
+                }
+                .keyboardShortcut(.escape)
+            }
+        }
+        .padding()
+        .frame(width: 360, height: 260)
+        .alert(statusMessage ?? "", isPresented: $showStatus) {
+            Button("OK") { dismiss() }
+        }
+    }
+    
+    private func restoreFromLocation() {
+        let openPanel = NSOpenPanel()
+        openPanel.title = "Select Backup Folder"
+        openPanel.prompt = "Restore"
+        openPanel.canChooseFiles = false
+        openPanel.canChooseDirectories = true
+        openPanel.allowsMultipleSelection = false
+        
+        openPanel.begin { response in
+            guard response == .OK, let backupURL = openPanel.url else { return }
+            performRestore(from: backupURL)
+        }
+    }
+    
+    private func performRestore(from backupURL: URL) {
+        isRestoring = true
+        restoreProgress = "Restoring from backup..."
+        
+        Task.detached {
+            do {
+                try dbManager.restore(from: backupURL)
+                await MainActor.run {
+                    isRestoring = false
+                    statusMessage = "Database restored successfully. PandyDoc will restart."
+                    showStatus = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        NSApp.terminate(nil)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isRestoring = false
+                    statusMessage = "Restore failed: \(error.localizedDescription)"
+                    showStatus = true
+                }
+            }
+        }
     }
 }
 

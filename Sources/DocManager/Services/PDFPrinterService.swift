@@ -219,7 +219,7 @@ final class PDFPrinterService {
         do {
             try fileManager.createDirectory(at: pdfServicesDir, withIntermediateDirectories: true)
 
-            let appBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
+            let appBundleURL = pdfServicesDir.appendingPathComponent("Save PDF to PandyDoc.app")
 
             if fileManager.fileExists(atPath: appBundleURL.path) {
                 try fileManager.removeItem(at: appBundleURL)
@@ -239,7 +239,7 @@ final class PDFPrinterService {
             end open
             """
 
-            let scriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("SaveToPandyDoc.applescript")
+            let scriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("SavePDFToPandyDoc.applescript")
             try appleScript.write(to: scriptURL, atomically: true, encoding: .utf8)
 
             let process = Process()
@@ -271,10 +271,33 @@ final class PDFPrinterService {
         }
     }
 
+    func uninstallPDFService() -> Bool {
+        let fileManager = FileManager.default
+        let pdfServicesDir = fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/PDF Services", isDirectory: true)
+        let appBundleURL = pdfServicesDir.appendingPathComponent("Save PDF to PandyDoc.app")
+        let legacyAppBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
+        
+        do {
+            if fileManager.fileExists(atPath: appBundleURL.path) {
+                try fileManager.removeItem(at: appBundleURL)
+            }
+            if fileManager.fileExists(atPath: legacyAppBundleURL.path) {
+                try fileManager.removeItem(at: legacyAppBundleURL)
+            }
+            print("PDFPrinterService: uninstalled")
+            return true
+        } catch {
+            print("PDFPrinterService: Failed to uninstall PDF Service: \(error)")
+            return false
+        }
+    }
+
     func isPDFServiceInstalled() -> Bool {
         let pdfServicesDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/PDF Services", isDirectory: true)
-        let appBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
-        return FileManager.default.fileExists(atPath: appBundleURL.path)
+        let appBundleURL = pdfServicesDir.appendingPathComponent("Save PDF to PandyDoc.app")
+        let legacyAppBundleURL = pdfServicesDir.appendingPathComponent("Save to PandyDoc.app")
+        return FileManager.default.fileExists(atPath: appBundleURL.path) || FileManager.default.fileExists(atPath: legacyAppBundleURL.path)
     }
 }
