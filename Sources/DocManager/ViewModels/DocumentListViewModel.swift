@@ -1084,6 +1084,7 @@ final class DocumentListViewModel: ObservableObject {
         }
 
         let items = enumerator.allObjects.compactMap { $0 as? URL }
+            .sorted { $0.pathComponents.count < $1.pathComponents.count }
         let totalFiles = items.filter {
             (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == false
         }.count
@@ -1097,12 +1098,13 @@ final class DocumentListViewModel: ObservableObject {
         for fileURL in items {
             let relativePath = String(fileURL.path.dropFirst(folderURL.path.count + 1))
             let relativeDir = (relativePath as NSString).deletingLastPathComponent
+            let parentKey = (relativeDir == "." || relativeDir.isEmpty) ? "" : relativeDir
 
             do {
                 let attributes = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
                 if attributes.isDirectory == true {
                     let folderName = fileURL.lastPathComponent
-                    let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
+                    let parentID = folderMap[parentKey] ?? rootFolder.id
                     let existingID = findExistingFolder(named: folderName, parentID: parentID)
                     if let existing = existingID {
                         folderMap[relativePath] = existing
@@ -1112,7 +1114,7 @@ final class DocumentListViewModel: ObservableObject {
                         errorCount += 1
                     }
                 } else {
-                    let parentID = folderMap[relativeDir.isEmpty ? "" : relativeDir] ?? rootFolder.id
+                    let parentID = folderMap[parentKey] ?? rootFolder.id
                     await performFileImportAsync(fileURL: fileURL, to: parentID)
                     importCount += 1
 
