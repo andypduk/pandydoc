@@ -69,9 +69,18 @@ struct DocumentController {
         }
 
         let body = try await request.decode(as: APIDocumentUpdateRequest.self, context: context)
-        if let name = body.name { doc.name = name }
-        if let notes = body.notes { doc.notes = notes }
-        if let tags = body.tags { doc.tags = tags }
+        if let name = body.name {
+            try InputValidation.validateName(name)
+            doc.name = name
+        }
+        if let notes = body.notes {
+            try InputValidation.validateNotes(notes)
+            doc.notes = notes
+        }
+        if let tags = body.tags {
+            try InputValidation.validateTags(tags)
+            doc.tags = tags
+        }
         doc.updatedAt = Date()
 
         try storage.updateDocument(doc)
@@ -112,6 +121,7 @@ struct DocumentController {
             throw APIError.notFound("Document not found")
         }
         let body = try await request.decode(as: APIRenameRequest.self, context: context)
+        try InputValidation.validateName(body.name)
         doc.name = body.name
         doc.updatedAt = Date()
         try storage.updateDocument(doc)
@@ -150,6 +160,7 @@ struct DocumentController {
             throw APIError.notFound("Document not found")
         }
         let body = try await request.decode(as: APITagRequest.self, context: context)
+        try InputValidation.validateTag(body.tag)
         if !doc.tags.contains(body.tag) {
             doc.tags.append(body.tag)
             doc.updatedAt = Date()
