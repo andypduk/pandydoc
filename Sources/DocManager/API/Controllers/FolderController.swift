@@ -34,6 +34,7 @@ struct FolderController {
 
     func createFolder(_ request: Request, context: some RequestContext) async throws -> Response {
         let body = try await request.decode(as: APIFolderCreateRequest.self, context: context)
+        try InputValidation.validateName(body.name, field: "Folder name")
         let folder = try storage.createFolder(name: body.name, parentID: body.parentId)
         return try encodeJSON(APIFolder(from: folder), context: context)
     }
@@ -47,6 +48,7 @@ struct FolderController {
             throw APIError.notFound("Folder not found")
         }
         let body = try await request.decode(as: APIFolderUpdateRequest.self, context: context)
+        try InputValidation.validateName(body.name, field: "Folder name")
         folder.name = body.name
         folder.updatedAt = Date()
         try storage.updateFolder(folder)

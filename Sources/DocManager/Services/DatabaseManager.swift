@@ -190,7 +190,18 @@ final class DatabaseManager {
         try connect()
     }
     
+    private static let validSQLIdentifier = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    private static let validSQLType = /^[A-Z]+$/
+    private static let validSQLDefault = /^(NULL|[0-9]+|'[^']*')$/
+
     private func addColumnIfNotExists(db: Connection, tableName: String, columnName: String, type: String, defaultValue: String) {
+        guard tableName.wholeMatch(of: Self.validSQLIdentifier) != nil,
+              columnName.wholeMatch(of: Self.validSQLIdentifier) != nil,
+              type.wholeMatch(of: Self.validSQLType) != nil,
+              defaultValue.wholeMatch(of: Self.validSQLDefault) != nil else {
+            print("addColumnIfNotExists: rejected unsafe identifier: table=\(tableName) col=\(columnName) type=\(type) default=\(defaultValue)")
+            return
+        }
         let sql = "ALTER TABLE \(tableName) ADD COLUMN \(columnName) \(type) DEFAULT \(defaultValue)"
         do {
             try db.execute(sql)
@@ -201,23 +212,19 @@ final class DatabaseManager {
     }
 
     private func verifyColumnExists(db: Connection, tableName: String, columnName: String) -> Bool {
+        guard tableName.wholeMatch(of: Self.validSQLIdentifier) != nil,
+              columnName.wholeMatch(of: Self.validSQLIdentifier) != nil else {
+            print("verifyColumnExists: rejected unsafe identifier: table=\(tableName) col=\(columnName)")
+            return false
+        }
         do {
             let rows = try db.prepare("PRAGMA table_info(\(tableName))")
-            print("Schema for \(tableName):")
             for row in rows {
-                let cid = row[0] as? Int64 ?? -1
                 let name = row[1] as? String ?? "unknown"
-                let type = row[2] as? String ?? "unknown"
-                let notNull = row[3] as? Int64 ?? 0
-                let defaultValue = row[4] as? String ?? "NULL"
-                let pk = row[5] as? Int64 ?? 0
-                print("  Column \(cid): \(name) (\(type), notnull=\(notNull), default=\(defaultValue), pk=\(pk))")
                 if name == columnName {
-                    print("Column \(columnName) in \(tableName): EXISTS")
                     return true
                 }
             }
-            print("Column \(columnName) in \(tableName): MISSING")
             return false
         } catch {
             print("Failed to verify column \(columnName) in \(tableName): \(error)")
